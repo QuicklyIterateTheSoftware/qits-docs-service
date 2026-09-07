@@ -197,6 +197,26 @@ Three things are worth knowing before adding one:
 - **Nothing narrates an edge.** The incoming half is the framework's shipped RestAssured tap; the
   outgoing half is the store's own access log. A story asserts and notes; it draws nothing.
 
+## The guides bundle
+
+`docs/guides/` holds the platform's **contract pages** — the ones that describe a file kind or a
+protocol every repository in the estate has to follow, and therefore belong to no single service.
+`configuration-yml.md` is the first: the authoritative account of `.config/qits/configuration.yml`,
+the file a service repository uses to declare its own environment keys and their defaults.
+
+`.config/qits/ci-event-release.yml` tars the directory at the released tag and PUTs it as
+`@guides/qits-platform`, publish-if-absent (409 is success — docs versions are immutable and releases
+replay), the same shape as qits-ci's `@apidocs` publish. The client renders the `@guides` scope with
+its existing markdown renderer and addresses the section at `/guides`.
+
+**Why here.** These pages are not this repository's documentation, and the site name says so —
+`@guides/qits-platform`, which the client's `siteBelongsToRepository` heuristic deliberately does not
+match to `qits-docs-service`, so the Guides section reads empty under this repository's scoped
+address and the pages live unscoped where they belong. What this repository contributes is a release
+cadence: qits-docs is the reading room, so a contract page ships the moment the thing that renders it
+does. Publishing them from any other repository would tie the estate's contracts to an unrelated
+service's release schedule.
+
 ## Not built yet
 
 - **A native IT.** `mvn verify -Dnative` compiles the binary but nothing yet drives it. The claim

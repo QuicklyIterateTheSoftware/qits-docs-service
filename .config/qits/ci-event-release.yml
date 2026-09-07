@@ -11,8 +11,10 @@
 #   pipeline went with per-push CI itself — the QA pipeline builds a fold and publishes no image —
 #   and qits-platform-deployments deploys the VERSION. So this push is the whole contract with it.
 # - `artifacts:` IS A DECLARATION, NOT A REPORT. qits-ci never learns how to publish anything, so
-#   it cannot see what the step pushed; it announces on the strength of the line below. One entry,
-#   because this pipeline pushes one image and this repository publishes no jar.
+#   it cannot see what the step pushed; it announces on the strength of the lines below. TWO entries
+#   now and still no jar: the image, and the `@guides/qits-platform` docs bundle this pipeline tars
+#   out of `docs/guides` and PUTs to the store. The second one is the estate's platform contract
+#   pages — see the block at the foot of the step for why THIS repository publishes them.
 # - THE NAME IS UNQUALIFIED ON PURPOSE — the registry is one service under several addresses
 #   ($QITS_BUILD_REGISTRY as the platform builder resolves it, $QITS_REGISTRY as the host daemon
 #   does), and an OCI reference cannot carry a path prefix. The reader supplies its own host,
@@ -61,6 +63,7 @@ checkout:
   optional: true        # ...and then this run is main's head, exactly as it was before
 artifacts:
   - { type: docker, name: qits/qits-docs }
+  - { type: docs, name: "@guides/qits-platform" }
 steps:
     # node-docker-base, the image the QA pipeline already uses: node, npm and git for half one,
     # buildctl for half two — and node is also what reads the event payload, which is JSON.
@@ -208,3 +211,49 @@ steps:
       curl -fsS -X PUT -H 'Content-Type: application/vnd.cyclonedx+json' \
         --data-binary @.sbom/sbom.json \
         "$sbom_base/docker/qits/qits-docs/-/$version"
+
+      # --- the guides bundle --------------------------------------------------------------------
+      # THE READING ROOM PUBLISHES INTO ITSELF, and that reads odd until you ask where else it would
+      # go. `docs/guides/` holds the platform's CONTRACT PAGES — the ones that describe a file kind
+      # or a protocol every repository in the estate has to follow, and therefore belong to no single
+      # service. They are not qits-docs' own documentation; qits-docs is simply the one repository
+      # whose release cadence is the reading room's own, so a contract page ships the moment the
+      # thing that renders it does. A `@guides/qits-platform` bundle published from anywhere else
+      # would be a docs site whose freshness depended on an unrelated service's release schedule.
+      #
+      # THE SITE NAME IS THE PLATFORM'S, NOT THIS REPOSITORY'S. `@guides/qits-platform`, so the
+      # client's own `siteBelongsToRepository` heuristic deliberately does NOT match it to
+      # qits-docs-service: under this repository's scoped address the Guides section reads empty,
+      # which is correct — these pages are not this repository's docs, and claiming them under it
+      # would put the estate's configuration contract behind "the docs service's documentation".
+      # Unscoped, at /guides, is where they are addressed.
+      #
+      # `-C docs/guides .` so the MARKDOWN FILES ARE THE BUNDLE ROOTS. The client's markdown renderer
+      # reads a flat bundle as one uncategorised page list (bundle-files.ts), so `configuration-yml.md`
+      # at the root is one page named for its file; tarring `docs/guides` from above would put a
+      # `guides/` directory in every served URL and turn the flat bundle into a one-category one.
+      # This is the userflows publish's own form, not the apidocs one — that publishes a single named
+      # file, this publishes a directory that grows a page per contract.
+      #
+      # PUBLISH-IF-ABSENT: 409 IS SUCCESS. Docs versions are immutable and releases replay, so a
+      # second run at the same version must not fail the release; the bytes already up are by
+      # definition the bytes this tag would have sent. Same discipline as the SBOM PUT above and as
+      # qits-ci's @apidocs publish, and the same reason the address is derived from
+      # $QITS_DOCS_URL rather than from an edge name: this is the step container's own call, over
+      # qits-net, sessionless.
+      #
+      # NO BRANCH METADATA HERE. The userflows publishes ride `git.branch.name` because they are
+      # per-commit bundles a reader picks a branch through; this one is version-addressed like the
+      # apidocs publish, and a branch header on it would light up the reader's branch select for a
+      # bundle that has exactly one lineage.
+      tar -czf guides.tgz -C docs/guides .
+      status=$(curl -sS -o /tmp/docs-publish.out -w '%{http_code}' \
+        -X PUT --data-binary @guides.tgz \
+        -H "X-Artifacts-Meta-git.commit.hash: $QITS_CI_SHA" \
+        -H "X-Artifacts-Meta-git.repository.name: qits-docs" \
+        "$QITS_DOCS_URL/@guides/qits-platform/-/$version")
+      case "$status" in
+        201) echo "published guides for qits-platform@$version" ;;
+        409) echo "guides for qits-platform@$version already published — skipping" ;;
+        *)   echo "guides publish failed: HTTP $status"; cat /tmp/docs-publish.out; exit 1 ;;
+      esac
