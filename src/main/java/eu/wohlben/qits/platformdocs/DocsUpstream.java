@@ -42,9 +42,29 @@ public class DocsUpstream {
   private static final Logger LOG = Logger.getLogger(DocsUpstream.class);
 
   /**
-   * qits-artifacts' docs repository root, including the repository segment — the same value CI
-   * injects into a publishing step as {@code $QITS_DOCS_URL}, so a deployment configures one
-   * address and the publisher and the reader agree by construction.
+   * The docs repository's path on qits-artifacts: its {@code /artifacts/docs} plane plus the one
+   * repository, {@code docs}, that is seeded on the store's first boot.
+   *
+   * <p><b>Why this is a constant and not configuration.</b> The two halves of the upstream URL are
+   * owned by different people. The <em>address</em> — which host, which port — is estate topology:
+   * it differs per environment, it moves when qits-artifacts moves, and only the platform knows it,
+   * which is why it arrives as {@code QITS_DOCS_ARTIFACTS_URL} and is declared as a {@code
+   * serviceAddress} in {@code .config/qits/configuration.yml}. The <em>path</em> is this service's
+   * own knowledge of its peer's API, no more configurable than the {@code /-/} separator or the
+   * {@code ?meta.git.branch.name=} filter a few lines down, and it belongs beside the code that
+   * dials it. A deployment that could set it could point this reader at a repository nothing
+   * publishes into.
+   *
+   * <p>{@code application.properties} already argues exactly this for the OTLP endpoint, which
+   * composes {@code /observability/api/otel} onto a bare {@code qits.observability.url}. This is
+   * the same shape, one commit later.
+   */
+  static final String REPOSITORY_PATH = "/artifacts/docs/docs";
+
+  /**
+   * qits-artifacts' ADDRESS on qits-net — scheme, host, port, no path. The repository path is
+   * {@link #REPOSITORY_PATH} and is composed onto it here; see that constant for which half belongs
+   * to whom.
    */
   @ConfigProperty(name = "qits.docs.artifacts-url")
   String artifactsUrl;
@@ -62,9 +82,40 @@ public class DocsUpstream {
 
   private HttpClient http;
 
+  /** {@link #storeRoot(String)} of {@link #artifactsUrl}, resolved once at construction. */
+  private String storeRoot;
+
   @PostConstruct
   void open() {
     http = HttpClient.newBuilder().connectTimeout(connectTimeout).build();
+    storeRoot = storeRoot(artifactsUrl);
+  }
+
+  /**
+   * The docs repository root to dial, from the configured address: trailing slash off, {@link
+   * #REPOSITORY_PATH} on.
+   *
+   * <p><b>The path is appended only when the configured URL has none, and that condition is
+   * TRANSITIONAL.</b> Until qits-bootstrap's {@code ComposeTemplate} EXTRAS block for qits-docs is
+   * deleted, a deployed container still receives the old path-bearing value ({@code
+   * http://<env>-qits-artifacts:8080/artifacts/docs/docs}) — and the two-step cold-boot rule in
+   * {@code docs/guides/configuration-yml.md} §7.5 says it must, for a whole release, because the
+   * declaration has to be seeded by a tag that is already the newest before the template may stop
+   * supplying the keys. Appending unconditionally in that window would dial {@code
+   * …/artifacts/docs/docs/artifacts/docs/docs} and 404 every read.
+   *
+   * <p>So this is not tolerance of two spellings as a design. It is the one seam that lets the code
+   * change and the declaration land in the same commit and survive a deployment that predates them
+   * both. <b>Delete the branch — keep the append — when the EXTRAS block goes.</b>
+   *
+   * <p>Extracted pure so a plain JUnit test can drive both shapes, the same reason {@link
+   * #parseVersionList} is static.
+   */
+  static String storeRoot(String configured) {
+    String address =
+        configured.endsWith("/") ? configured.substring(0, configured.length() - 1) : configured;
+    String path = URI.create(address).getPath();
+    return path == null || path.isEmpty() ? address + REPOSITORY_PATH : address;
   }
 
   /** One upstream response, still streaming. The caller owns {@link #body} and must close it. */
@@ -179,7 +230,7 @@ public class DocsUpstream {
    */
   List<Version> versionDetails(String site, String branch) {
     URI target =
-        branch == null ? uri(site) : URI.create(trimmed() + "/" + site + branchQuery(branch));
+        branch == null ? uri(site) : URI.create(storeRoot + "/" + site + branchQuery(branch));
     HttpResponse<String> response =
         send(HttpRequest.newBuilder(target).GET(), HttpResponse.BodyHandlers.ofString());
     if (response.statusCode() == 404) {
@@ -277,7 +328,7 @@ public class DocsUpstream {
 
   /** The store's docs repository root — the catalog lives there. */
   private URI root() {
-    return URI.create(trimmed());
+    return URI.create(storeRoot);
   }
 
   private URI uri(String suffix) {
@@ -285,13 +336,7 @@ public class DocsUpstream {
     // a leading @, and every convenience API in sight would either decode or re-encode it. The
     // segments reaching here have already been matched against DocsPaths' character classes, so
     // there is nothing in them a URI could legitimately need to escape.
-    return URI.create(trimmed() + "/" + suffix);
-  }
-
-  private String trimmed() {
-    return artifactsUrl.endsWith("/")
-        ? artifactsUrl.substring(0, artifactsUrl.length() - 1)
-        : artifactsUrl;
+    return URI.create(storeRoot + "/" + suffix);
   }
 
   private <T> HttpResponse<T> send(
@@ -302,7 +347,7 @@ public class DocsUpstream {
       Thread.currentThread().interrupt();
       throw new DocsUpstreamException("the request to qits-artifacts was interrupted");
     } catch (IOException unreachable) {
-      LOG.debugf(unreachable, "docs upstream unreachable at %s", artifactsUrl);
+      LOG.debugf(unreachable, "docs upstream unreachable at %s", storeRoot);
       throw new DocsUpstreamException(
           "qits-artifacts could not be reached: " + unreachable.getMessage());
     } catch (InterruptedException interrupted) {

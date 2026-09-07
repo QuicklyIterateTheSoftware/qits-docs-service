@@ -62,10 +62,10 @@ public class StoryProfile implements QuarkusTestProfile {
     // test profile is instantiated in more than one classloader, and the property table is the one
     // thing every copy (and a story method's own reads) shares.
     String store = StoryStore.ensureStarted();
-    return Map.of(
-        "qits.docs.artifacts-url",
-        store + StoryStore.REPOSITORY_PATH,
-        "quarkus.otel.sdk.disabled",
-        "true");
+    // The ADDRESS alone, no path — the shape a deployment supplies now that the key is declared as
+    // a serviceAddress. DocsUpstream composes StoryStore.REPOSITORY_PATH onto it, so every path the
+    // stories assert is still the one a deployment really builds, and the composition itself is now
+    // under the stories rather than beside them.
+    return Map.of("qits.docs.artifacts-url", store, "quarkus.otel.sdk.disabled", "true");
   }
 }

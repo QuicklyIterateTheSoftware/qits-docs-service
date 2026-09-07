@@ -52,4 +52,29 @@ class DocsUpstreamParseTest {
         "?meta.git.branch.name=a+b%23c",
         DocsUpstream.branchQuery("a b#c"), "spaces and fragments must not reach URI.create raw");
   }
+
+  @Test
+  void anAddressGetsTheRepositoryPathComposedOntoIt() {
+    assertEquals(
+        "http://dev-qits-artifacts:8080/artifacts/docs/docs",
+        DocsUpstream.storeRoot("http://dev-qits-artifacts:8080"),
+        "the declared serviceAddress shape: the path is the code's, not the deployment's");
+    assertEquals(
+        "http://dev-qits-artifacts:8080/artifacts/docs/docs",
+        DocsUpstream.storeRoot("http://dev-qits-artifacts:8080/"),
+        "a trailing slash is not a path");
+  }
+
+  @Test
+  void aPathBearingUrlIsLeftAloneWhileTheExtrasBlockStillSuppliesOne() {
+    // TRANSITIONAL — delete this test with the branch it covers, once qits-bootstrap's EXTRAS block
+    // for qits-docs is gone. Until then a running container is configured by the old template and
+    // appending again would dial /artifacts/docs/docs/artifacts/docs/docs.
+    assertEquals(
+        "http://dev-qits-artifacts:8080/artifacts/docs/docs",
+        DocsUpstream.storeRoot("http://dev-qits-artifacts:8080/artifacts/docs/docs"));
+    assertEquals(
+        "http://dev-qits-artifacts:8080/artifacts/docs/docs",
+        DocsUpstream.storeRoot("http://dev-qits-artifacts:8080/artifacts/docs/docs/"));
+  }
 }

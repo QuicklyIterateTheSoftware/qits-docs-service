@@ -1,0 +1,53 @@
+# What this application reads from its environment, declared where the code that reads it lives.
+#
+# The file kind, its types, its precedence and the two-step migration rule are specified in
+# docs/guides/configuration-yml.md, in this repository. qits-platform-deployments fetches this path
+# at the release tag and seeds it into qits-configuration before it schedules anything; a version
+# with no file here deploys exactly as it always did.
+#
+# THE FIRST ONE IN THE ESTATE. qits-docs was picked because its whole configuration is one address
+# and two deadlines: it holds no state, mints no credential and has no identity block, so every key
+# below is a peer address and nothing here is a judgement call about what must stay in bootstrap.
+#
+# Keys are spelled `env.<VAR>` — the store's own entry grammar (ConfigurationKeys.ENV_KEY,
+# `^env\.[A-Za-z_][A-Za-z0-9_]*$`). A declared key and an operator's override are two layers of one
+# entry, so they are one spelling; a bare name here would be a name that has to be rewritten before
+# it can be resolved against anything, and a rewrite is a place for the two to stop matching.
+#
+# Both keys below are also still supplied by qits-bootstrap's ComposeTemplate EXTRAS block for
+# qits-docs, and MUST be until a tag carrying this file is this repository's newest (§7.5). The
+# imported layer sits above the declared default, so landing this file changes nothing observable —
+# which is the point of step one.
+keys:
+
+  # qits-artifacts' docs plane: every site this service reads, and the store the CI publish step
+  # writes into. The ADDRESS only. The `/artifacts/docs/docs` half is DocsUpstream.REPOSITORY_PATH,
+  # composed app-side — the store's route grammar is its own to change, and a path written down
+  # here would be this repository holding an opinion it cannot keep current.
+  #
+  # `qits-artifacts` is the APPLICATION name, from that repository's own .config/qits/deployments.yml
+  # — not `qits-artifacts-service`, which is only what the repository is called. It records
+  # `deployment_target: environment`, so this renders `http://<env>-qits-artifacts:8080` in every
+  # tier, which is what the EXTRAS line spells by hand as `${ENV_NAME}-qits-artifacts` today.
+  env.QITS_DOCS_ARTIFACTS_URL:
+    type: serviceAddress
+    service: qits-artifacts
+    port: 8080
+    description: >-
+      The artifact store this service reads documentation bundles from. Address only; the docs
+      repository path is composed by DocsUpstream.
+
+  # The OTLP receiver. Also address-only, and it always was: application.properties composes
+  # /observability/api/otel onto it for the exporter, and the exporter appends /v1/<signal>.
+  #
+  # qits-observability is an environment service too, so this renders `<env>-`-prefixed. The bare
+  # `http://qits-observability:8080` in application.properties is a local-run default that resolves
+  # on no tiered estate — the deployment has always supplied over it, and now the declaration says
+  # so out loud rather than leaving it to a template.
+  env.QITS_OBSERVABILITY_URL:
+    type: serviceAddress
+    service: qits-observability
+    port: 8080
+    description: >-
+      Where this service exports traces, metrics and logs. Address only; the OTLP ingest path is
+      appended by the exporter configuration.

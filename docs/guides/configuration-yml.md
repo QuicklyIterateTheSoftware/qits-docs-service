@@ -35,7 +35,7 @@ The top level is **closed** and holds exactly one key:
 ```yaml
 # .config/qits/configuration.yml
 keys:
-  QITS_DOCS_PAGE_SIZE:
+  env.QITS_DOCS_PAGE_SIZE:
     type: number
     default: 50
     description: How many versions one catalog page returns.
@@ -72,11 +72,35 @@ Each entry under `keys:` is a mapping:
 
 ```yaml
 keys:
-  <ENV_KEY_NAME>:
+  env.<VAR>:
     type: string | boolean | number | serviceAddress | packageVersion
     default: <literal>        # some types take one, some refuse one
     description: <free text>  # optional, and worth writing anyway
 ```
+
+### The key is spelled `env.<VAR>`, prefix included
+
+Not the bare `QITS_DOCS_PAGE_SIZE` — `env.QITS_DOCS_PAGE_SIZE`. The grammar is qits-configuration's
+own, `ConfigurationKeys.ENV_KEY`:
+
+    ^env\.[A-Za-z_][A-Za-z0-9_]*$
+
+which is the same shape as the `mounts[0]` / `publishes[0]` / `groups[0]` / `aliases[0]` families
+the store already holds, and the same string an operator override is written under
+(`PUT …/entries/env.QITS_DOCS_PAGE_SIZE`). A key that fails it is a `422`, for the reason §1 gives
+about unrecognised top-level keys.
+
+**Why carry the prefix rather than derive it.** A declared default and an operator override are two
+layers of *one entry* (§5), and resolution is a merge over the key. If the declaration spelled a
+bare name, something would have to prefix it on the way in — and a rewrite between two layers of the
+same entry is a place where the two can stop matching, silently, with the override winning over a
+default nobody can see any more. The `env.` prefix is also what leaves room for the non-env families
+to be declarable later without a second grammar; those are compose topology and stay in bootstrap
+today (§7.4), but the key space is already theirs.
+
+The prefix is the *store's*, not the container's: the variable the process actually reads is
+`QITS_DOCS_PAGE_SIZE`. `env.` says which namespace of a deployment's extras this key lands in,
+exactly as it does in `qits.platform.deployments.extras.<app>.env.<VAR>`.
 
 The type vocabulary is **closed**. An unknown `type:` is a parse failure for the same reason an
 unknown top-level key is: the alternative is a key that declares itself into existence with no
@@ -93,7 +117,7 @@ The unremarkable one. `default:` is optional; a key with no default is declared-
 legitimate state (the application must cope with absence, and now says so out loud).
 
 ```yaml
-  QITS_DOCS_DEFAULT_SITE:
+  env.QITS_DOCS_DEFAULT_SITE:
     type: string
     default: "@qits/ui-components"
     description: The site the reading room opens on when the URL names none.
@@ -106,7 +130,7 @@ generous about spelling booleans and that generosity is exactly what makes a con
 spellings of one value in one estate, and eventually a parser somewhere that only knows two of them.
 
 ```yaml
-  QITS_DOCS_METRICS_ENABLED:
+  env.QITS_DOCS_METRICS_ENABLED:
     type: boolean
     default: false
 ```
@@ -119,7 +143,7 @@ number type starts accepting `512M` it has to have an opinion about whether that
 536 870 912, and it should not have opinions.
 
 ```yaml
-  QITS_DOCS_CACHE_SECONDS:
+  env.QITS_DOCS_CACHE_SECONDS:
     type: number
     default: 300
     description: How long a resolved version redirect stays cacheable. Seconds.
@@ -130,7 +154,7 @@ number type starts accepting `512M` it has to have an opinion about whether that
 The interesting one, and the reason this file kind is worth having at all.
 
 ```yaml
-  QITS_EVENTS_URL:
+  env.QITS_EVENTS_URL:
     type: serviceAddress
     service: qits-events
     port: 8080
@@ -162,7 +186,7 @@ The interesting one, and the reason this file kind is worth having at all.
 ### `packageVersion`
 
 ```yaml
-  QITS_DOCS_IMAGE_VERSION:
+  env.QITS_DOCS_IMAGE_VERSION:
     type: packageVersion
     package:
       type: docker            # docker | binary
@@ -329,13 +353,13 @@ Anything spelled with an `${ENV_NAME}-qits-X` or `${ALIAS_X}` interpolation is a
 
 ```yaml
 # was:  QITS_OBSERVABILITY_URL: http://${ENV_NAME}-qits-observability:8080
-QITS_OBSERVABILITY_URL:
+env.QITS_OBSERVABILITY_URL:
   type: serviceAddress
   service: qits-observability
   port: 8080
 
 # was:  QITS_EVENTS_URL: http://${ALIAS_EVENTS}:8080
-QITS_EVENTS_URL:
+env.QITS_EVENTS_URL:
   type: serviceAddress
   service: qits-events
   port: 8080
@@ -349,6 +373,27 @@ environment including the ones that do not exist yet.
 **If the value carried a path, the path moves into your code.** `http://${ALIAS_EVENTS}:8080/events/api`
 becomes a `serviceAddress` declaration plus an `/events/api` your client composes. This is a real code
 change and it is the only part of the migration that is not mechanical — budget for it.
+
+And it has a window in it, because of §7.5. Your code stops expecting a path in the value on the
+commit that lands the declaration, but the EXTRAS block keeps *supplying* one for a whole release
+after that — so between the two, a running container is configured with the old value and your new
+code. Composing unconditionally in that window doubles the path and 404s every call.
+
+The transitional shape that survives it, in one line at the seam:
+
+```java
+// TRANSITIONAL — delete the branch, keep the append, when the EXTRAS block goes.
+String path = URI.create(address).getPath();
+return path == null || path.isEmpty() ? address + PEER_PATH : address;
+```
+
+**Compose the path only when the configured value has none.** Not "strip a trailing path", which
+requires guessing which suffix was yours; not "tolerate both spellings forever", which is how a
+transitional branch becomes a permanent one. A path-bearing value means bootstrap is still speaking,
+and the right response is to leave it exactly alone. Mark the branch, test both shapes, and delete
+it in the same change that deletes the EXTRAS block — the deletion is one line on each side, and the
+comment is what makes the second one findable a release later. qits-docs' `DocsUpstream.storeRoot`
+is the worked example.
 
 ### 7.2 Flags, sizing and paths → typed literals
 
@@ -414,34 +459,46 @@ is the path you take when you are already having a bad day.
 
 ---
 
-## 8. A complete example
+## 8. The first one, and a fuller invented one
+
+**The pilot is real and it is in this repository:**
+[`.config/qits/configuration.yml`](../../.config/qits/configuration.yml), qits-docs' own. Read it
+first — it is short, every claim in it was checked against the code, and it is the shape every other
+translation is graded against. qits-docs went first because its whole configuration is one address
+and two deadlines: no state, no credential, no identity block, so every key in it is a peer address
+and nothing in it is a judgement call about what stays in bootstrap. It declares exactly two keys,
+both `serviceAddress`, and the code change it travels with (`DocsUpstream.REPOSITORY_PATH` plus the
+transitional seam of §7.1) is the whole of what "the path moves into your code" costs in practice.
+
+The example below is **invented** — qits-docs has no page-size or strict-entrypoint key — and it is
+here only to show the typed literals beside the addresses in one file, which the real one cannot:
 
 ```yaml
-# .config/qits/configuration.yml — qits-docs
+# .config/qits/configuration.yml — illustrative, not qits-docs' actual file
 keys:
-  # A peer, addressed. No path: DocsPaths composes /docs/api/... app-side.
-  QITS_ARTIFACTS_URL:
+  # A peer, addressed. No path: the client composes /artifacts/docs/docs app-side.
+  env.QITS_ARTIFACTS_URL:
     type: serviceAddress
     service: qits-artifacts
     port: 8080
 
-  QITS_OBSERVABILITY_URL:
+  env.QITS_OBSERVABILITY_URL:
     type: serviceAddress
     service: qits-observability
     port: 8080
 
   # Typed literals, carried across verbatim from the template's env block.
-  QITS_DOCS_CATALOG_PAGE_SIZE:
+  env.QITS_DOCS_CATALOG_PAGE_SIZE:
     type: number
     default: 50
     description: Versions per page in the catalog API. Raising it costs the store a wider listing.
 
-  QITS_DOCS_REDIRECT_CACHE_SECONDS:
+  env.QITS_DOCS_REDIRECT_CACHE_SECONDS:
     type: number
     default: 300
     description: Cache lifetime of a version redirect. Seconds; a published version is immutable.
 
-  QITS_DOCS_STRICT_ENTRYPOINT:
+  env.QITS_DOCS_STRICT_ENTRYPOINT:
     type: boolean
     default: false
     description: Refuse a bundle with no index.html rather than serving its first file.
@@ -451,7 +508,11 @@ keys:
 
 ## 9. Frequently reversed
 
+- A declared key is spelled **`env.QITS_X`**, not `QITS_X`. It is the store's entry key, and a
+  declared default and an operator override are two layers of one entry. (§2)
 - The address renders with **no path** — the path is your code's. (§2)
+- Compose that path **only when the configured value has none**, and delete the condition with the
+  EXTRAS block. (§7.1)
 - `service:` is the **application** name, not the repository name. (§2)
 - A `packageVersion` key belongs to the application that **reads** it, not the one that publishes the
   package. (§7.3)

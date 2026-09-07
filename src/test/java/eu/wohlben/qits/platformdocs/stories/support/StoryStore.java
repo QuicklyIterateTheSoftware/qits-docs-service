@@ -113,9 +113,13 @@ public final class StoryStore {
   public static final String PUBLISHER = "the publishing pipeline";
 
   /**
-   * The docs repository's path on the store, repository segment included — the tail of the real
-   * {@code qits.docs.artifacts-url} ({@code http://dev-qits-artifacts:8080/artifacts/docs/docs}),
-   * kept verbatim so every path below is the URL a deployment really builds.
+   * The docs repository's path on the store, repository segment included.
+   *
+   * <p>No longer the tail of {@code qits.docs.artifacts-url} — that key carries the ADDRESS now,
+   * and {@code DocsUpstream.REPOSITORY_PATH} carries this. Spelled verbatim here rather than read
+   * off the production constant on purpose: a test that took the value from the code it is checking
+   * would assert the store and the reader agree with themselves. These two must agree with <em>each
+   * other</em>, and they move together.
    */
   public static final String REPOSITORY_PATH = "/artifacts/docs/docs";
 

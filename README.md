@@ -101,13 +101,34 @@ most expensive wrong answer a component in the middle can give.
 
 | Key | Default | What |
 | --- | --- | --- |
-| `qits.docs.artifacts-url` | `http://dev-qits-artifacts:8080/artifacts/docs/docs` | the store, **including** its repository segment |
+| `qits.docs.artifacts-url` | `http://dev-qits-artifacts:8080` | the store's **address** — scheme, host, port, no path |
 | `qits.docs.connect-timeout` | `PT2S` | |
 | `qits.docs.request-timeout` | `PT30S` | bounds the response *head*, not the transfer |
 
-The artifacts URL is the same value qits-ci injects into a publishing step as `$QITS_DOCS_URL`, and
-that is deliberate: a deployment configures one address, and the publisher and the reader cannot
-disagree about where documentation lives.
+**The address is configured; the path is not.** `/artifacts/docs/docs` is
+`DocsUpstream.REPOSITORY_PATH`, composed onto the address in the code that dials it. The split is
+who knows what: which host and port qits-artifacts answers on is estate topology, differs per
+environment and is the platform's to state, while the docs plane's route and its one repository are
+this service's knowledge of its peer's API — as configurable as the `/-/` version separator, which
+is to say not at all. `qits.observability.url` and its `/observability/api/otel` are the same split,
+and were before this one.
+
+Both keys are **declared**, in [`.config/qits/configuration.yml`](.config/qits/configuration.yml),
+as `serviceAddress` entries naming the `qits-artifacts` and `qits-observability` applications. The
+platform renders each per environment, so the defaults above are local-run values rather than facts
+a deployment has to be told. The file kind is specified in
+[`docs/guides/configuration-yml.md`](docs/guides/configuration-yml.md).
+
+*Transitional*: qits-bootstrap's `ComposeTemplate` EXTRAS block still supplies the old path-bearing
+`QITS_DOCS_ARTIFACTS_URL`, and must keep doing so for one release — the declaration has to be
+seeded by a tag that is already the newest before the template may stop. `DocsUpstream.storeRoot`
+therefore appends nothing when the configured URL already carries a path. That branch is deleted
+with the block.
+
+qits-ci injects the same store root into a publishing step as `$QITS_DOCS_URL`, from a key of its
+own. It stays path-bearing there — a step container is handed a URL to `curl`, not an address to
+compose against — so the two are no longer the same *value*, and they are still the same *root*:
+the publisher and the reader cannot disagree about where documentation lives.
 
 The in-network alias is the right default for the reason the npm and maven roots give — this process
 dials it from inside `qits-net`, so a host-published mapping (a local stack's `localhost:8081`) must
