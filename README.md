@@ -222,8 +222,18 @@ Three things are worth knowing before adding one:
 
 `docs/guides/` holds the platform's **contract pages** — the ones that describe a file kind or a
 protocol every repository in the estate has to follow, and therefore belong to no single service.
-`configuration-yml.md` is the first: the authoritative account of `.config/qits/configuration.yml`,
-the file a service repository uses to declare its own environment keys and their defaults.
+
+- `configuration-yml.md` — the authoritative account of `.config/qits/configuration.yml`, the file a
+  service repository uses to declare its own environment keys and their defaults.
+- `agent-configuration.md` — what a coding-agent session runs as: the session surface, the stored
+  per-surface configuration, the document a container is born with, and how harness capabilities are
+  discovered. The contract shared by `qits-coding-agents`, both daemons, qits-projects and
+  qits-workspaces.
+
+**One file, one page.** The bundle is tarred flat (`-C docs/guides .`), and the client's markdown
+renderer reads a flat bundle as one uncategorised page list named for each file — so a new contract
+page is a new `.md` at the root of this directory and nothing else. There is no index, no
+front-matter and no navigation file to register it in.
 
 `.config/qits/ci-event-release.yml` tars the directory at the released tag and PUTs it as
 `@guides/qits-platform`, publish-if-absent (409 is success — docs versions are immutable and releases
