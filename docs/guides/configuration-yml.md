@@ -327,9 +327,15 @@ back to a version whose declaration is older and narrower than the one it was ru
 The rule is:
 
 - **Orphans are kept.** The value is not deleted, not hidden, and not moved.
-- **Orphans are flagged at read time.** The resolved map and the entries listing both mark them, so
-  the fact is visible wherever someone is already looking, rather than in a report nobody runs.
+- **Orphans are flagged at read time.** The entries listing and the single-entry view mark each one
+  `orphaned`, so a person sees the fact where they already look, not in a report nobody runs.
 - **Orphans are swept deliberately**, by a person who has looked at them, and never automatically.
+
+The resolved map carries no such flag. In it, an orphan looks like any other stored value. That
+matters because most orphans still reach the container: a key the declaration does not mention
+stays in the resolved map at its stored value. Only one kind is left out: a stored row on a key the
+declaration types `serviceAddress`. The platform renders that address and ignores the stored value
+(§2). So to find orphans, read the entries, not the resolved map.
 
 Auto-deletion is the tempting design and it is wrong for one specific reason: **a rollback makes
 orphans out of perfectly good values.** Deploy `v9`, an operator sets an override on a key `v9`
@@ -338,6 +344,12 @@ auto-deletion the rollback silently destroys operator intent, and rolling forwar
 back up with the default. The value has to survive the round trip, so the orphan has to survive it.
 
 An orphan is a question, not garbage.
+
+A person answers that question in the qits-configuration web UI. Since 2026-09-13 the entries page
+shows a **Remove** action on each row flagged `orphaned`. Remove deletes the stored row, but it does
+not erase it: the history keeps the removed value. A later bootstrap import can bring the value back
+if the bootstrap template still sets that key. Remove is a person's choice about one row. Nothing
+removes an orphan automatically, and a rollback can still make new orphans that deserve to stay.
 
 ---
 

@@ -443,9 +443,9 @@ which"). It is settled in `control/AgentMcpCatalog`, and the reasoning is short:
   spelled with the one grammar the store has.
 - **The application name is a constant, deliberately not configurable.** A per-deployment namespace
   would be a per-deployment place for a credential to hide.
-- **The cost, stated rather than hidden:** `qits-agent-mcp` has no declaration, so its entries read
-  as `orphaned` in qits-configuration's own listing. That flag means "no declaration accounts for
-  this key", which is true and harmless — nothing is written or removed on the strength of it.
+- **Its entries are not flagged `orphaned`.** `qits-agent-mcp` has no declaration, and
+  qits-configuration flags nothing for an application without one: no declaration means "unknown",
+  not "unaccounted for". So its entries show as ordinary rows in qits-configuration's own listing.
 
 The read itself takes `qits:admin` or `qits:system` and has **no header fallback**, unlike the ci and
 maintenance hops: a forwarded `X-Qits-*` pair from a machine-driven document build carries neither
