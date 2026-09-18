@@ -191,10 +191,11 @@ reader is at `/read/**`, outside `/docs` entirely. `q/` and `api/` still are.
 [userflows](https://github.com/QuicklyIterateTheSoftware/qits-userflows-javalib): each test is a
 `@UserStory` method that asserts *and* emits its own documentation — steps, a narrative, and a
 **network diagram drawn from traffic that was observed rather than narrated**. `mvn verify`
-regenerates `target/userstories/`, and the non-gating step of
-`.config/qits/ci-event-release-request.yml` publishes it once per release-request fold as
-`@userflows/qits-docs`, which is a site this service then serves. That step carries `gating: false`:
-a red story fails the run and shows red without holding the request's build gate. A reader following the stories
+regenerates `target/userstories/`, and the verify step of `.config/qits/release.yml`'s
+release-request phase — the `java-service` archetype's, which this repository does not override —
+publishes it once per release-request fold as `@userflows/qits-docs`, which is a site this service
+then serves. That step **gates**, like every step of that pipeline: a red story is a red verdict for
+the whole fold and holds the request. A reader following the stories
 arrives at the stories.
 
 | Story | Category | What it pins |
@@ -235,7 +236,8 @@ renderer reads a flat bundle as one uncategorised page list named for each file 
 page is a new `.md` at the root of this directory and nothing else. There is no index, no
 front-matter and no navigation file to register it in.
 
-`.config/qits/ci-event-release.yml` tars the directory at the released tag and PUTs it as
+`.config/qits/release.yml`'s own `release:` slot — the one thing this repository overrides — tars the
+directory at the released tag and submits it as
 `@guides/qits-platform`, publish-if-absent (409 is success — docs versions are immutable and releases
 replay), the same shape as qits-ci's `@apidocs` publish. The client renders the `@guides` scope with
 its existing markdown renderer and addresses the section at `/guides`.
