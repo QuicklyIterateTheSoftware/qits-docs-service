@@ -94,9 +94,16 @@ about unrecognised top-level keys.
 layers of *one entry* (§5), and resolution is a merge over the key. If the declaration spelled a
 bare name, something would have to prefix it on the way in — and a rewrite between two layers of the
 same entry is a place where the two can stop matching, silently, with the override winning over a
-default nobody can see any more. The `env.` prefix is also what leaves room for the non-env families
-to be declarable later without a second grammar; those are compose topology and stay in bootstrap
-today (§7.4), but the key space is already theirs.
+default nobody can see any more. The `env.` prefix is also what keeps the non-env families addressable
+without a second grammar: the store has always accepted them, `ConfigurationKeys.INDEXED_KEY` being
+
+    ^(mounts|publishes|groups|aliases)\[[0-9]{1,4}]$
+
+— what has never been true is that a *repository* declares them. Publishes, groups and aliases are
+compose topology and stay in bootstrap (§7.4). Mounts have split: a host bind stays there with them,
+while a named volume is declared by the application after all — in `.config/qits/deployments.yml`
+under `volumes:`, not in this file, because it is not environment and does not want a default, an
+override or a per-environment value. §7.4 has the grammar and the reason.
 
 The prefix is the *store's*, not the container's: the variable the process actually reads is
 `QITS_DOCS_PAGE_SIZE`. `env.` says which namespace of a deployment's extras this key lands in,
@@ -423,7 +430,9 @@ the most commonly reversed one in review.
 ### 7.4 What must STAY in `ComposeTemplate.java`
 
 Not "for now" — these are structurally wrong for a declaration file, and none of them is a candidate
-for a later wave:
+for a later wave. The list has been wrong once, and how is worth knowing before you read it: named
+volumes were on it, and are not any more, because they turned out not to be topology at all (below).
+Everything still on it is here for a reason that does not expire:
 
 - **Secrets.** `*_PASSWORD`, `*_SECRET`, `*_TOKEN`, and anything else that is one. The declaration
   file is fetched by path from the git host at a tag; it is exactly as readable as the repository. A
@@ -439,7 +448,11 @@ for a later wave:
   the edge's other env-naming keys. These say which environment this *is*. A declaration is a
   statement about the application, identical everywhere (§1) — an environment's own name is the one
   thing it definitionally cannot be.
-- **Mounts, publishes, groups and aliases.** Not environment at all — compose topology that happens to
+- **Host binds.** `bind:/var/run/docker.sock:…` on qits-containers, qits-deployments and
+  qits-platform-system, and anything else whose source is a path on the box. A host path is a fact
+  about the machine the container lands on, not about the application, so it is authored where the
+  machines are described. Named volumes used to share this bullet and no longer do — see below.
+- **Publishes, groups and aliases.** Not environment at all — compose topology that happens to
   live in the same template.
 - **Boot-sequencing keys.** The deployer's extras-url, the self-update keys: the ones read *in order
   to be able to fetch configuration*. A key whose value is needed to reach the config service cannot
@@ -448,6 +461,41 @@ for a later wave:
 - **Initial pin values at cold boot.** The first version of anything, before a `SoftwareRelease` has
   ever been observed. `packageVersion` is estate state written by the release listener, and at cold
   boot the listener has heard nothing.
+
+**Named volumes were in that list and have left it, and the reason is the useful part.** A named
+volume is identical in every environment and it is a property of what the application *is*: a
+service that keeps state keeps it in its own volume, at the same target, in dev and in prod and in
+an environment nobody has created yet. Holding it in the config store made a structural fact
+something an operator had to write, in a different repository, before the code that depended on it
+could work — which is the defect §1 names about defaults, in a worse form, because there is no
+default to fall back to. Ticket qits-291 is where it bit: the reader shipped, deployed and correct,
+and could read nothing at all, because the volume it needed could not be attached by releasing the
+code that needed it.
+
+So a named volume is now declared in the application's own `.config/qits/deployments.yml`, under a
+`volumes:` key parsed exactly like the `resources:` key beside it — not here, and not in
+`ComposeTemplate.java`:
+
+    volumes: private:<name>:<target>[:ro], shared:<volume>:<target>[:ro]
+
+- **`private:<name>:<target>`** is the application's own volume, and the volume name is **derived**,
+  not spelled: `<application>-<name>`, the same derivation `postgresql:db` already uses to get a
+  database name. qits-workspaces writes `private:data:<target>` and gets `qits-workspaces-data`.
+  Every private volume on the estate today is expressible this way — `qits-workspaces-data`,
+  `qits-containers-config`, `qits-stt-data`, `qits-projects-data`, `qits-deployments-config`,
+  `qits-platform-system-config`, `qits-oci-postgresql-data` — which is the test the grammar had to
+  pass before it was worth having.
+- **`shared:<volume>:<target>`** names a platform-owned volume literally: `qits_shared_dot_claude`
+  and its two siblings. That one is not the application's to derive — it is the platform's, several
+  applications mount it, and a derivation rule applied to a name nobody owns would just be a second
+  spelling of the same string.
+- **`:ro` is the only option.** Not a subset of compose's mount options that will grow one flag per
+  incident — read-only or not, and nothing else.
+
+What the grammar cannot express is a bind, and that is the line rather than an omission: `private:`
+and `shared:` are both names the platform owns, and there is no production spelling that takes a
+host path. An application that wants one is asking for something about the machine, which is the
+bullet above.
 
 ### 7.5 The two-step cold-boot rule, per repository
 
@@ -530,5 +578,8 @@ keys:
   package. (§7.3)
 - An operator override beats a declared default **always**, except `packageVersion` against a release,
   **once**. (§5)
+- A **named volume** is declared in `deployments.yml` under `volumes:`, with the name **derived** as
+  `<application>-<name>`; a **host bind** stays in `ComposeTemplate.java`. Neither is ever a key in
+  this file. (§7.4)
 - An orphan is **kept**, and a rollback is why. (§6)
 - Declaration first, template deletion second, **in two releases**. (§7.5)
