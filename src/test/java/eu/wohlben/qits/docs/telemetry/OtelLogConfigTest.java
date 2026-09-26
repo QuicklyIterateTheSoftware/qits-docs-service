@@ -1,4 +1,4 @@
-package eu.wohlben.qits.platformdocs.telemetry;
+package eu.wohlben.qits.docs.telemetry;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 

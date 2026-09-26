@@ -1,4 +1,4 @@
-package eu.wohlben.qits.platformdocs.stories.support;
+package eu.wohlben.qits.docs.stories.support;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;

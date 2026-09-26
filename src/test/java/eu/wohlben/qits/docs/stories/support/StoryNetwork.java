@@ -1,4 +1,4 @@
-package eu.wohlben.qits.platformdocs.stories.support;
+package eu.wohlben.qits.docs.stories.support;
 
 import eu.wohlben.qits.userflows.NetworkTaps;
 
@@ -29,11 +29,11 @@ import eu.wohlben.qits.userflows.NetworkTaps;
  *
  * <p>A cumulative source is attributed by a cursor, so anything recorded before the first drain
  * lands in whichever story drains FIRST. {@code UserflowClassOrderer} sorts by fully-qualified
- * class name, so {@code …platformdocs.DocsReadingBootstrapIT} runs before every {@code
- * …platformdocs.stories.*} class and owns the boot; within {@code stories}, {@code reading} runs
- * before {@code refusals}. {@code @UserflowRunsAfter} states the ones that are real dependencies as
- * well as being true of the names — the catalog story reads the store <i>before</i> anything
- * publishes into it, and that is a dependency rather than a coincidence of spelling.
+ * class name, so {@code …docs.DocsReadingBootstrapIT} runs before every {@code …docs.stories.*}
+ * class and owns the boot; within {@code stories}, {@code reading} runs before {@code refusals}.
+ * {@code @UserflowRunsAfter} states the ones that are real dependencies as well as being true of
+ * the names — the catalog story reads the store <i>before</i> anything publishes into it, and that
+ * is a dependency rather than a coincidence of spelling.
  */
 public final class StoryNetwork {
 
