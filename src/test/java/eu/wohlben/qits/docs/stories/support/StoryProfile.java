@@ -1,4 +1,4 @@
-package eu.wohlben.qits.platformdocs.stories.support;
+package eu.wohlben.qits.docs.stories.support;
 
 import io.quarkus.test.junit.QuarkusTestProfile;
 import java.util.Map;

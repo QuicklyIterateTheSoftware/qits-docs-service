@@ -1,4 +1,4 @@
-package eu.wohlben.qits.platformdocs.stories.reading;
+package eu.wohlben.qits.docs.stories.reading;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.containsString;
@@ -7,11 +7,11 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import eu.wohlben.qits.platformdocs.DocsReadingBootstrapIT;
-import eu.wohlben.qits.platformdocs.stories.support.StoryNetwork;
-import eu.wohlben.qits.platformdocs.stories.support.StoryProfile;
-import eu.wohlben.qits.platformdocs.stories.support.StoryStore;
-import eu.wohlben.qits.platformdocs.stories.support.StoryTarget;
+import eu.wohlben.qits.docs.DocsReadingBootstrapIT;
+import eu.wohlben.qits.docs.stories.support.StoryNetwork;
+import eu.wohlben.qits.docs.stories.support.StoryProfile;
+import eu.wohlben.qits.docs.stories.support.StoryStore;
+import eu.wohlben.qits.docs.stories.support.StoryTarget;
 import eu.wohlben.qits.userflows.Interactions;
 import eu.wohlben.qits.userflows.NetworkCapture;
 import eu.wohlben.qits.userflows.NetworkEdge;

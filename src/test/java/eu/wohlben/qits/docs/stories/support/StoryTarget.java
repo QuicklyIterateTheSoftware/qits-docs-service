@@ -1,4 +1,4 @@
-package eu.wohlben.qits.platformdocs.stories.support;
+package eu.wohlben.qits.docs.stories.support;
 
 import eu.wohlben.qits.userflows.Labels;
 import io.restassured.RestAssured;

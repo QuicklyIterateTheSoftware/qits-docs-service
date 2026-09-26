@@ -1,4 +1,4 @@
-package eu.wohlben.qits.platformdocs;
+package eu.wohlben.qits.docs;
 
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.ext.web.RoutingContext;

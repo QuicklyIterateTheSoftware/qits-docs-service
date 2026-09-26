@@ -1,4 +1,4 @@
-package eu.wohlben.qits.platformdocs;
+package eu.wohlben.qits.docs;
 
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;

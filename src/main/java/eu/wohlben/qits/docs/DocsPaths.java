@@ -1,4 +1,4 @@
-package eu.wohlben.qits.platformdocs;
+package eu.wohlben.qits.docs;
 
 /**
  * The route grammar for {@code /docs}.

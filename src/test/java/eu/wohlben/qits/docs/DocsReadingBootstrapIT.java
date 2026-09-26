@@ -1,13 +1,13 @@
-package eu.wohlben.qits.platformdocs;
+package eu.wohlben.qits.docs;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import eu.wohlben.qits.platformdocs.stories.support.StoryNetwork;
-import eu.wohlben.qits.platformdocs.stories.support.StoryProfile;
-import eu.wohlben.qits.platformdocs.stories.support.StoryStore;
-import eu.wohlben.qits.platformdocs.stories.support.StoryTarget;
+import eu.wohlben.qits.docs.stories.support.StoryNetwork;
+import eu.wohlben.qits.docs.stories.support.StoryProfile;
+import eu.wohlben.qits.docs.stories.support.StoryStore;
+import eu.wohlben.qits.docs.stories.support.StoryTarget;
 import eu.wohlben.qits.userflows.Interactions;
 import eu.wohlben.qits.userflows.NetworkCapture;
 import eu.wohlben.qits.userflows.NetworkEdge;
@@ -35,12 +35,12 @@ import org.junit.jupiter.api.BeforeAll;
  *
  * <p><b>This class owns the boot, and its edge count is what says the boot was quiet.</b> The far
  * side's recording is cumulative with no floor and this class sorts first of every story class in
- * the fork ({@code …platformdocs.DocsReadingBootstrapIT} before {@code …platformdocs.stories.*}),
- * so anything the launched process asked the store before any story ran would land in this story's
- * diagram. Exactly two edges is therefore a claim about startup as much as about the catalog:
- * <b>qits-docs dials nothing when it starts</b>. It has nothing to dial for — no JWKS to fetch, no
- * credential to mint, no registry to reconcile, no cache to warm — which is the same statelessness
- * that lets {@code latest} mean the newest version <i>now</i>.
+ * the fork ({@code …docs.DocsReadingBootstrapIT} before {@code …docs.stories.*}), so anything the
+ * launched process asked the store before any story ran would land in this story's diagram. Exactly
+ * two edges is therefore a claim about startup as much as about the catalog: <b>qits-docs dials
+ * nothing when it starts</b>. It has nothing to dial for — no JWKS to fetch, no credential to mint,
+ * no registry to reconcile, no cache to warm — which is the same statelessness that lets {@code
+ * latest} mean the newest version <i>now</i>.
  *
  * <p>The far side is {@link StoryStore}, a real listener speaking qits-artifacts' docs plane, and
  * the recordings make each interaction assertable on <b>both ends</b>: the reader acted on the
