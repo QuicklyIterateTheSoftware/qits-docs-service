@@ -131,7 +131,7 @@ RUN --mount=type=secret,id=qits-client-id \
       echo "in src/main/webui first — this stage cannot, see the header." >&2; \
       exit 1; }; \
     cp -a "$d" "$d.layer" && rm -rf "$d" && mv "$d.layer" "$d" && \
-    ./mvnw -B -ntp -s .qits-maven-settings.xml package -Dnative \
+    ./mvnw -B -ntp -e -Dorg.slf4j.simpleLogger.log.org.eclipse.aether.internal.impl=debug -s .qits-maven-settings.xml package -Dnative \
       -Dqits.maven.repository.url="$QITS_MAVEN_REPOSITORY_URL" \
       -Dquarkus.native.native-image-xmx=4g \
       -Dquarkus.quinoa.package-manager-install=true \
