@@ -333,10 +333,14 @@ back to a version whose declaration is older and narrower than the one it was ru
 
 The rule is:
 
-- **Orphans are kept.** The value is not deleted, not hidden, and not moved.
+- **Orphans are kept while anything could still read them.** The value is not deleted, not hidden,
+  and not moved, for as long as some version the platform could still run — serving now, or one
+  rollback away — might state the key.
 - **Orphans are flagged at read time.** The entries listing and the single-entry view mark each one
   `orphaned`, so a person sees the fact where they already look, not in a report nobody runs.
-- **Orphans are swept deliberately**, by a person who has looked at them, and never automatically.
+- **Orphans are swept two ways**: a person, looking at a flagged row and choosing Remove; and the
+  platform GC, which removes the entries of *retired* keys on its own, nightly and after a wave of
+  deployments.
 
 The resolved map carries no such flag. In it, an orphan looks like any other stored value. That
 matters because most orphans still reach the container: a key the declaration does not mention
@@ -344,19 +348,54 @@ stays in the resolved map at its stored value. Only one kind is left out: a stor
 declaration types `serviceAddress`. The platform renders that address and ignores the stored value
 (§2). So to find orphans, read the entries, not the resolved map.
 
-Auto-deletion is the tempting design and it is wrong for one specific reason: **a rollback makes
-orphans out of perfectly good values.** Deploy `v9`, an operator sets an override on a key `v9`
-introduced, something breaks, roll back to `v8` — whose declaration never mentioned that key. Under
-auto-deletion the rollback silently destroys operator intent, and rolling forward again to `v9` comes
-back up with the default. The value has to survive the round trip, so the orphan has to survive it.
+A key is **retired** when no version the platform could still run states it — not the serving
+version, and not the one version a rollback restores (the same pair `GET /deployments/api/pins`
+names for the rollback itself). The GC checks every stored entry against that pair and removes
+exactly the ones that fail every one of these:
 
-An orphan is a question, not garbage.
+- `unpinned` — the application does not serve anywhere, so nothing reads any of its entries yet the
+  entries stay, because a pin can still name it again;
+- `undeclaredPinnedVersion` — a pinned version has no declaration on file, so it resolves
+  entries-only and any entry may be the one it reads;
+- `pinned` — a declaration of a pinned version states the key, of any type;
+- `inFlight` — a declaration received after the newest pinned one states the key: a deploy in
+  flight, not live yet, that will read it;
+- `neverDeclared` — no declaration this application ever sent has stated the key. This is where a
+  key staged early for a version not released yet lives, and where a deliberately undeclared key
+  lives. Neither is the GC's business; both stay a person's call, via Remove;
+- `staged` — the entry was written after the application's newest declaration was received, so it
+  is presumably meant for the next one.
 
-A person answers that question in the qits-configuration web UI. Since 2026-09-13 the entries page
-shows a **Remove** action on each row flagged `orphaned`. Remove deletes the stored row, but it does
-not erase it: the history keeps the removed value. A later bootstrap import can bring the value back
-if the bootstrap template still sets that key. Remove is a person's choice about one row. Nothing
-removes an orphan automatically, and a rollback can still make new orphans that deserve to stay.
+Whatever is left — a key some declaration used to state, that no version the platform could still
+run states any more — is retired, and the GC removes its entry through the ordinary delete: the
+history keeps the value, as a `deleted` revision authored by the GC's own caller. The run's receipt
+and the door it calls both list which keys were removed, never their values.
+
+Auto-deleting by the `orphaned` flag itself would be wrong, and for a specific reason: **a rollback
+makes orphans out of perfectly good values.** Walk it through. Deploy `v9`, whose declaration
+introduces a key `K`; an operator sets an override on `K`; something breaks; roll back to `v8`, whose
+declaration never mentioned `K`. The entry is orphaned the moment `v8` starts serving — but `v9`
+does not leave the pins: it is now `v8`'s rollback target, so the pins still name it, and `K`'s entry
+is `pinned` against it and kept. Roll forward again to `v9` and the override is still there. The GC does
+not use the `orphaned` flag at all; it asks the pins question instead, which gives the right answer
+in exactly the case that breaks simple auto-deletion.
+
+That also draws the honest boundary: the value survives for as long as some version that reads it is
+at most one rollback away. Once no pin names such a version any more — a second rollback, or a new
+deploy that moves the pins past it — nothing could come back to read it, its image becomes eligible
+for garbage collection too, and its entries are retired. The value itself is not gone: the history
+still has it.
+
+An orphan is a question, not garbage — the ones the GC leaves are still exactly that; it collects
+only the strict subset that stopped being a live question the moment nothing could read them.
+
+A person answers the remaining question in the qits-configuration web UI. Since 2026-09-13 the
+entries page shows a **Remove** action on each row flagged `orphaned`. Remove deletes the stored row,
+but it does not erase it: the history keeps the removed value. A later bootstrap import can bring the
+value back if the bootstrap template still sets that key. Remove is a person's choice about one row,
+and it is still the only way to clear a `neverDeclared` or `staged` orphan — the GC leaves those
+alone on purpose, because it cannot tell staging for tomorrow's release apart from a key nobody ever
+meant to declare.
 
 ---
 
@@ -581,5 +620,6 @@ keys:
 - A **named volume** is declared in `deployments.yml` under `volumes:`, with the name **derived** as
   `<application>-<name>`; a **host bind** stays in `ComposeTemplate.java`. Neither is ever a key in
   this file. (§7.4)
-- An orphan is **kept**, and a rollback is why. (§6)
+- An orphan is **kept** while a rollback could still reach it; once retired, the platform GC removes
+  the entry itself. (§6)
 - Declaration first, template deletion second, **in two releases**. (§7.5)
