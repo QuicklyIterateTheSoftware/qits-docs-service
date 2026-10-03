@@ -51,11 +51,10 @@
              ETags, and an upload route. stories/support/StoryStore is that API, standing in for it
              the way every sibling repository's peer stub stands in for its peers. -->
         <qits.userflows.version>2026.1002.72731</qits.userflows.version>
-        <!-- Where it comes from. The default is the registry's HOST-PUBLISHED address, which is
-             right for a developer and reachable from nothing else; every build that runs elsewhere
-             overrides it — .config/qits/ci-event-userflows.yml from $QITS_MAVEN_REGISTRY_URL, and
-             docker/Dockerfile from its QITS_MAVEN_REPOSITORY_URL build arg. -->
-        <qits.maven.repository.url>http://registry.dev.localhost:8080/artifacts/maven/maven</qits.maven.repository.url>
+        <!-- Where it comes from. The default is the public host, https://registry.qits.wohlben.eu,
+             which answers 401 without the commissioned client; docker/Dockerfile derives the same
+             address from its QITS_DOMAIN build arg for every build that runs elsewhere. -->
+        <qits.maven.repository.url>https://registry.qits.wohlben.eu/artifacts/maven/maven</qits.maven.repository.url>
 
         <compiler-plugin.version>3.15.0</compiler-plugin.version>
         <surefire-plugin.version>3.5.4</surefire-plugin.version>

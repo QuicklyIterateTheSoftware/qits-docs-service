@@ -23,7 +23,10 @@ qits-artifacts (the far side is an in-process stand-in on loopback), but they do
 reach the platform's own repository for the one test-scope jar `qits-userflows`, which is the only
 qits dependency this pom has. Off the platform network that means the usual pair:
 
-    export QITS_MAVEN_REPOSITORY_URL=http://registry.dev.localhost:8080/artifacts/maven/maven
+    export QITS_MAVEN_REPOSITORY_URL=https://registry.qits.wohlben.eu/artifacts/maven/maven
+    export QITS_MAVEN_CENTRAL_URL=https://mirror.qits.wohlben.eu/mirror/maven/central
+    export QITS_MAVEN_AUTH_USR=<your commissioned client id>
+    export QITS_MAVEN_AUTH_PSW=<your commissioned client secret>
     ./mvnw -s .qits-maven-settings.xml verify
 
 ## Why this exists rather than a path on qits-artifacts
