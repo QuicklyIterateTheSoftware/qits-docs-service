@@ -7,41 +7,36 @@
 # it — and, incidentally, a way for a machine with no GraalVM to still get a binary, since the
 # builder stage brings its own native-image.
 #
-# Build from the repo root, on the network where the platform's Maven repository answers:
+# Build from the repo root:
 #
-#     docker build --network host \
-#       --build-arg QITS_MAVEN_REPOSITORY_URL="http://$QITS_REGISTRY/artifacts/maven/maven" \
+#     docker build \
+#       --build-arg QITS_DOMAIN=wohlben.eu \
+#       --secret id=qits-client-id,env=QITS_MAVEN_AUTH_USR \
+#       --secret id=qits-client-secret,env=QITS_MAVEN_AUTH_PSW \
 #       -t qits/qits-docs:latest -f docker/Dockerfile .
 #
-# BOTH FLAGS ARRIVED WITH THE USERFLOWS ROLLOUT, and neither has a workable default. This pom used
-# to resolve everything from Maven Central — the header of .config/qits/ci-post-receive.yml said so
-# at length — and it no longer does: `qits-userflows`, the TEST-scope jar the userflow story
-# catalogue is written against, is published to the platform's own Maven repository and available
-# from nowhere else. Test scope is not a reprieve, because this stage
-# deliberately runs the suite (see the absent -DskipTests below) and Maven resolves the test
-# classpath to compile it either way.
+# A CREDENTIAL IS NOW REQUIRED, and it arrived with the userflows rollout for a reason that has
+# nothing to do with credentials: this pom used to resolve everything from Maven Central — the
+# header of .config/qits/ci-post-receive.yml said so at length — and it no longer does.
+# `qits-userflows`, the TEST-scope jar the userflow story catalogue is written against, is published
+# to the platform's own Maven repository and available from nowhere else. Test scope is not a
+# reprieve, because this stage deliberately runs the suite (see the absent -DskipTests below) and
+# Maven resolves the test classpath to compile it either way. The registry is a public host now —
+# `registry.qits.$QITS_DOMAIN`, derived by the ARG below — reachable from a RUN step like any other
+# address, but it answers 401 without a credential.
 #
-#   --network host        A HAND BUILD'S FLAG, not CI's any more. It puts the build in the host
-#                         namespace, which is where the registry's host-published address resolves.
-#                         Not a custom network — buildkit refuses those on a build.
-#   --build-arg           names the address the resolve uses. The ARG below turns it into
-#                         -Dqits.maven.repository.url, which the pom's `qits-maven` repository reads
-#                         and .qits-maven-settings.xml mirrors.
-#
-# CI PASSES NO --network AT ALL SINCE THE BUILDER MIGRATION. Both pipeline files drive the platform's
-# own buildkitd, where a `RUN` executes on qits-net, so they pass the IN-NETWORK Maven address
-# ($QITS_MAVEN_REGISTRY_URL) into the same ARG and need no network flag to reach it. See
-# qits-buildkit-plan.md in the wrapper.
+#   --build-arg QITS_DOMAIN   the public domain the two registry hosts are composed under. The ARG
+#                             below turns it into -Dqits.maven.repository.url, which the pom's
+#                             `qits-maven` repository reads and .qits-maven-settings.xml mirrors.
 #
 # THE CLIENT IS BUILT BEFORE THIS IMAGE, NOT IN IT — qits-gateway's deviation from the platform's
 # Quinoa recipe, for its reason exactly. src/main/webui is qits-spa-docs and it depends on
-# @qits/ui-components, which exists ONLY on the platform's own npm registry. A RUN step in a docker
-# build reaches the public internet and can reach that registry by NO address: not the qits-net
-# alias, not registry.dev.localhost:8080, not host.docker.internal. So the install happens where it
-# can — the CI step container on qits-net, or a developer's host — and this stage packages an
-# already-built dist/ with Quinoa's install and build commands replaced by `--version`. An install
-# that "worked" here would have resolved the @qits scope against npmjs.org, where those names do not
-# exist.
+# @qits/ui-components, which exists ONLY on the platform's own npm registry
+# (registry.qits.$QITS_DOMAIN), and that answers 401 without a credential this stage is not handed.
+# So the install happens where it can — the CI step container, or a developer's host — and this
+# stage packages an already-built dist/ with Quinoa's install and build commands replaced by
+# `--version`. An install that "worked" here without the credential would have resolved the @qits
+# scope against npmjs.org, where those names do not exist.
 
 # --- stage `build`: native-compile ---------------------------------------------------------------
 # The builder JDK MUST be 25: native-image cannot read bytecode newer than its own JDK, and this
@@ -87,29 +82,31 @@ COPY . .
 # `npm run build` in the CI step is then a red build rather than a service that ships without its
 # reading room.
 #
-# `-s .qits-maven-settings.xml` is what lets the `qits-maven` repository be an http:// URL at all:
-# Maven blocks external http repositories by default, and an exact repository-id mirror is the one
-# thing that outranks the blocker. The settings file permits that one id and nothing else.
+# `-s .qits-maven-settings.xml` is what lets the `qits-maven` repository be resolved at all: an
+# exact repository-id mirror is how the derived URL below reaches the pom's `qits-maven` repository.
 #
 # THE ABSENT -DskipITs IS NOT AN OVERSIGHT EITHER. pom.xml now sets `skipITs` false — this
 # repository's integration tests are all userflow stories, and they are cheap — but failsafe binds
 # to the integration-test phase, which is AFTER package. Stopping at `package` is what keeps this stage
 # from launching the artifact it just compiled.
-ARG QITS_MAVEN_REPOSITORY_URL=http://registry.dev.localhost:8080/artifacts/maven/maven
-ENV QITS_MAVEN_REPOSITORY_URL=$QITS_MAVEN_REPOSITORY_URL
+#
+# --- and where the two qits jars and Maven Central come from --------------------------------------
+# Both platform hosts are code plus one input, the public domain:
+#
+#   https://registry.qits.$QITS_DOMAIN/artifacts/maven/maven   hosted Maven (qits-artifacts)
+#   https://mirror.qits.$QITS_DOMAIN/mirror/maven/central      Maven Central cache (qits-mirror)
+#
+# The RUN below derives both and exports them for that RUN alone; `.qits-maven-settings.xml` reads
+# them as ${env.…}, mirroring the `qits-maven` repository id onto the first and Central onto the
+# second. The CI recipe passes QITS_DOMAIN; the default is the live platform's.
+ARG QITS_DOMAIN=wohlben.eu
 
-# --- and where Maven Central is mirrored, when it is ----------------------------------------------
-# The pipeline passes the platform's pull-through (qits-platform-mirror's central proxy, the same
-# authority the FROM lines above pull through); EMPTY — the default — means direct Maven Central.
-# `.qits-maven-settings.xml` activates its central-proxy profile only on a non-empty value, so a
-# bootstrap or hand build that passes nothing resolves exactly as it always did.
-ARG QITS_MAVEN_CENTRAL_URL=
-ENV QITS_MAVEN_CENTRAL_URL=$QITS_MAVEN_CENTRAL_URL
-
+# --- and how Maven authenticates --------------------------------------------------------------------
+# Both hosts answer 401 anonymously, so every build that resolves through them needs a credential.
 # The two secret mounts put the CI run's commissioned client into THIS `RUN`'s environment and
 # nowhere else — not a layer, not the image history. That is why they are not build args: this image
 # is pullable, and a build arg is recorded where anyone who pulls it can read it.
-# `.qits-maven-settings.xml` reads the two variables as the `qits-maven-network` server.
+# `.qits-maven-settings.xml` presents them as the username and password of both mirrors.
 #
 # FILE FORM, NOT `env=`. The mounts are bare (`/run/secrets/<id>`, read into this command's own
 # environment by the two `cat`s below) rather than the `env=` mount form they used to be: `env=`
@@ -117,13 +114,15 @@ ENV QITS_MAVEN_CENTRAL_URL=$QITS_MAVEN_CENTRAL_URL
 # is the BUILDER's to pick rather than this file's, while the bare file mount is served identically
 # by every frontend version. See qits-buildkit-plan.md in the wrapper.
 #
-# Absent secrets leave both variables empty — the `|| true`, which is every hand build's state —
-# and the settings read that exactly as they read unset: Maven sends credentials only when a
-# repository answers 401, and the registry does not yet.
+# Absent secrets leave both variables empty — the `|| true` — so a hand build without them still
+# starts, and fails at the first 401 with Maven naming the host. Pass your own client to build by
+# hand: `--secret id=qits-client-id,env=… --secret id=qits-client-secret,env=…`.
 RUN --mount=type=secret,id=qits-client-id \
     --mount=type=secret,id=qits-client-secret \
     export QITS_MAVEN_AUTH_USR="$(cat /run/secrets/qits-client-id 2>/dev/null || true)"; \
     export QITS_MAVEN_AUTH_PSW="$(cat /run/secrets/qits-client-secret 2>/dev/null || true)"; \
+    export QITS_MAVEN_REPOSITORY_URL="https://registry.qits.$QITS_DOMAIN/artifacts/maven/maven"; \
+    export QITS_MAVEN_CENTRAL_URL="https://mirror.qits.$QITS_DOMAIN/mirror/maven/central"; \
     d=src/main/webui/dist/qits-spa-docs/browser; \
     test -f "$d/index.html" || { \
       echo "No built client at $d." >&2; \
