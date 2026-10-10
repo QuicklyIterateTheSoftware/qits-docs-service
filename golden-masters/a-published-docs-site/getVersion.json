@@ -1,0 +1,13 @@
+{
+  "name" : "@qits/ui-components",
+  "version" : "2026.829.0",
+  "fileCount" : 4,
+  "totalBytes" : 173,
+  "publishedAt" : "2026-08-29T07:00:00Z",
+  "files" : [ "index.html", "assets/main-a1b2c3d4.js", "assets/theme-e5f60718.css", "iframe.html" ],
+  "metadata" : {
+    "git.branch.name" : "main",
+    "git.commit.hash" : "2026.829.0",
+    "git.repository.name" : "@qits/ui-components"
+  }
+}

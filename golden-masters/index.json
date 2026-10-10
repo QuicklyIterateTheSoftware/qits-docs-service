@@ -1,0 +1,123 @@
+{
+  "formatVersion" : 1,
+  "provider" : "qits-docs",
+  "states" : [ {
+    "name" : "a published docs site",
+    "slug" : "a-published-docs-site",
+    "params" : {
+      "site" : "@qits/ui-components",
+      "version" : "2026.829.0"
+    },
+    "dependsOn" : [ ],
+    "operations" : [ {
+      "operationId" : "listSites",
+      "method" : "GET",
+      "path" : "/docs/api/sites",
+      "query" : { },
+      "status" : 200,
+      "file" : "a-published-docs-site/listSites.json",
+      "frozen" : {
+        "ids" : [ ],
+        "instants" : [ ],
+        "strings" : [ ],
+        "listFilteredTo" : null
+      }
+    }, {
+      "operationId" : "listVersions",
+      "method" : "GET",
+      "path" : "/docs/api/versions",
+      "query" : {
+        "site" : "{site}"
+      },
+      "status" : 200,
+      "file" : "a-published-docs-site/listVersions.json",
+      "frozen" : {
+        "ids" : [ ],
+        "instants" : [ "$.versions[*].publishedAt" ],
+        "strings" : [ ],
+        "listFilteredTo" : null
+      }
+    }, {
+      "operationId" : "getVersion",
+      "method" : "GET",
+      "path" : "/docs/api/version",
+      "query" : {
+        "site" : "{site}",
+        "version" : "{version}"
+      },
+      "status" : 200,
+      "file" : "a-published-docs-site/getVersion.json",
+      "frozen" : {
+        "ids" : [ ],
+        "instants" : [ "$.publishedAt" ],
+        "strings" : [ ],
+        "listFilteredTo" : null
+      }
+    } ]
+  }, {
+    "name" : "a docs site published from two branches",
+    "slug" : "a-docs-site-published-from-two-branches",
+    "params" : {
+      "branch" : "main",
+      "site" : "@userflows/qits-githost"
+    },
+    "dependsOn" : [ ],
+    "operations" : [ {
+      "operationId" : "listVersions",
+      "method" : "GET",
+      "path" : "/docs/api/versions",
+      "query" : {
+        "site" : "{site}",
+        "branch" : "{branch}"
+      },
+      "status" : 200,
+      "file" : "a-docs-site-published-from-two-branches/listVersions.json",
+      "frozen" : {
+        "ids" : [ ],
+        "instants" : [ "$.versions[*].publishedAt" ],
+        "strings" : [ ],
+        "listFilteredTo" : null
+      }
+    } ]
+  }, {
+    "name" : "no such docs site",
+    "slug" : "no-such-docs-site",
+    "params" : {
+      "site" : "@userflows/qits-nowhere",
+      "version" : "2026.101.0"
+    },
+    "dependsOn" : [ ],
+    "operations" : [ {
+      "operationId" : "listVersions",
+      "method" : "GET",
+      "path" : "/docs/api/versions",
+      "query" : {
+        "site" : "{site}"
+      },
+      "status" : 404,
+      "file" : "no-such-docs-site/listVersions.txt",
+      "frozen" : {
+        "ids" : [ ],
+        "instants" : [ ],
+        "strings" : [ ],
+        "listFilteredTo" : null
+      }
+    }, {
+      "operationId" : "getVersion",
+      "method" : "GET",
+      "path" : "/docs/api/version",
+      "query" : {
+        "site" : "{site}",
+        "version" : "{version}"
+      },
+      "status" : 404,
+      "file" : "no-such-docs-site/getVersion.txt",
+      "frozen" : {
+        "ids" : [ ],
+        "instants" : [ ],
+        "strings" : [ ],
+        "listFilteredTo" : null
+      }
+    } ]
+  } ]
+}

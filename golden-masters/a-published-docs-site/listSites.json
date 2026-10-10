@@ -1,0 +1,27 @@
+{
+  "scopes" : [ {
+    "scope" : "@qits",
+    "docs" : [ {
+      "name" : "@qits/ui-components",
+      "shortName" : "ui-components",
+      "versionCount" : 3,
+      "latestVersion" : "2026.829.0"
+    } ]
+  }, {
+    "scope" : "@userflows",
+    "docs" : [ {
+      "name" : "@userflows/qits-githost",
+      "shortName" : "qits-githost",
+      "versionCount" : 2,
+      "latestVersion" : "c4b3a29180f1e2d3c4b5a69786f1d0c9b8a7e6d5"
+    } ]
+  }, {
+    "scope" : "",
+    "docs" : [ {
+      "name" : "qits-docs",
+      "shortName" : "qits-docs",
+      "versionCount" : 1,
+      "latestVersion" : "2026.827.163649"
+    } ]
+  } ]
+}

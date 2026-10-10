@@ -3,6 +3,13 @@ artifacts:
   - { type: docker, name: qits/qits-docs, sbom: .sbom/sbom.json }
   - { type: docs, name: "@guides/qits-platform" }
 userflows: qits-docs
+# THE PROVIDER HALF OF THE CONTRACT (ticket qits-1149): /docs/api/*'s recorded answers, for a
+# consumer's pact to take its responses from. npm too, because the expected consumer is the Angular
+# client. No `pacts:` entry yet: this repository's own pact against qits-artifacts-service cannot be
+# written until qits-artifacts publishes golden masters, and an entry with no file is refused.
+contracts:
+  application: qits-docs
+  golden-masters: { from: golden-masters/, packages: [maven, npm] }
 
 # A SECOND PUBLICATION BESIDE THE IMAGE: `docs/guides/` is the platform's contract pages, and this
 # is the one repository that may publish them. The site is the PLATFORM'S name, not this
