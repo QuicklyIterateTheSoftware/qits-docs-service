@@ -85,7 +85,7 @@
              range: a newer recording is a pact change. qits-pact-consumer is the estate's shared
              golden-master reader (out of qits-integrations-quarkus-javalib);
              qits-artifacts-golden-masters is what qits-artifacts-service answers in each state. -->
-        <qits.pact-consumer.version>2026.1010.140259</qits.pact-consumer.version>
+        <qits.pact-consumer.version>2026.1010.141817</qits.pact-consumer.version>
         <qits.artifacts-golden-masters.version>2026.1010.133922</qits.artifacts-golden-masters.version>
     </properties>
 
