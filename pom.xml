@@ -75,6 +75,12 @@
              docker/Dockerfile is unaffected: its builder stage stops at `package`, which is before
              the integration-test phase, so the image build never launches the artifact. -->
         <skipITs>false</skipITs>
+
+        <!-- pact-jvm, TEST SCOPE (ticket qits-1149, epic qits-546): the version every repository on
+             the estate writes and verifies pacts with. The consumer half is ArtifactsContract (this
+             service's calls to qits-artifacts); the provider half is contracts/
+             ConsumerPactVerificationTest. -->
+        <pact.version>4.6.21</pact.version>
     </properties>
 
     <dependencyManagement>
@@ -162,6 +168,23 @@
             <groupId>eu.wohlben.qits</groupId>
             <artifactId>qits-userflows</artifactId>
             <version>${qits.userflows.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <!-- The consumer pact against qits-artifacts (ArtifactsContract,
+                 ArtifactsConsumerPactTest, ArtifactsPactFileTest). Plain JUnit 5: DocsUpstream
+                 talks over the JDK's HttpClient and needs no Quarkus application to build. -->
+            <groupId>au.com.dius.pact.consumer</groupId>
+            <artifactId>junit5</artifactId>
+            <version>${pact.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <!-- The provider half: contracts/ConsumerPactVerificationTest replays every consumer
+                 pact against /docs/api/* on the golden-master states. -->
+            <groupId>au.com.dius.pact.provider</groupId>
+            <artifactId>junit5</artifactId>
+            <version>${pact.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
