@@ -1,0 +1,818 @@
+{
+  "consumer": {
+    "name": "qits-docs-service"
+  },
+  "interactions": [
+    {
+      "comments": {
+        "references": {
+          "qits-call": {
+            "app": "qits-artifacts-service",
+            "operationId": "listDocsSites"
+          },
+          "qits-trigger": {
+            "app": "qits-docs-service",
+            "kind": "operation",
+            "operationId": "GET /docs/api/sites"
+          }
+        }
+      },
+      "description": "GET /docs/api/sites: listDocsSites",
+      "key": "2c3cff43",
+      "pending": false,
+      "providerStates": [
+        {
+          "name": "a published docs site",
+          "params": {
+            "path": "index.html",
+            "site": "contract-docs-site",
+            "version": "2100.1.0"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/artifacts/docs/docs"
+      },
+      "response": {
+        "body": {
+          "content": {
+            "sites": [
+              {
+                "latestVersion": "2100.1.0",
+                "name": "contract-docs-site",
+                "versionCount": 1
+              }
+            ]
+          },
+          "contentType": "application/json",
+          "encoded": false
+        },
+        "headers": {
+          "Content-Type": [
+            "application/json"
+          ]
+        },
+        "matchingRules": {
+          "body": {
+            "$.sites": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type",
+                  "min": 1
+                }
+              ]
+            },
+            "$.sites[*].latestVersion": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.sites[*].name": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.sites[*].versionCount": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "number"
+                }
+              ]
+            }
+          },
+          "header": {
+            "Content-Type": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "regex",
+                  "regex": "application/json.*"
+                }
+              ]
+            }
+          }
+        },
+        "status": 200
+      },
+      "type": "Synchronous/HTTP"
+    },
+    {
+      "comments": {
+        "references": {
+          "qits-call": {
+            "app": "qits-artifacts-service",
+            "operationId": "getDocsVersion"
+          },
+          "qits-trigger": {
+            "app": "qits-docs-service",
+            "kind": "operation",
+            "operationId": "GET /docs/api/version"
+          }
+        }
+      },
+      "description": "GET /docs/api/version: getDocsVersion",
+      "key": "facb33d7",
+      "pending": false,
+      "providerStates": [
+        {
+          "name": "a published docs site",
+          "params": {
+            "path": "index.html",
+            "site": "contract-docs-site",
+            "version": "2100.1.0"
+          }
+        }
+      ],
+      "request": {
+        "generators": {
+          "path": {
+            "dataType": "RAW",
+            "expression": "/artifacts/docs/docs/${site}/-/${version}",
+            "type": "ProviderState"
+          }
+        },
+        "method": "GET",
+        "path": "/artifacts/docs/docs/contract-docs-site/-/2100.1.0"
+      },
+      "response": {
+        "body": {
+          "content": {
+            "files": [
+              "index.html"
+            ],
+            "metadata": {
+              "git.branch.name": "main"
+            }
+          },
+          "contentType": "application/json",
+          "encoded": false
+        },
+        "headers": {
+          "Content-Type": [
+            "application/json"
+          ]
+        },
+        "matchingRules": {
+          "body": {
+            "$.files": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type",
+                  "min": 0
+                }
+              ]
+            },
+            "$.files[*]": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.metadata['git.branch.name']": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            }
+          },
+          "header": {
+            "Content-Type": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "regex",
+                  "regex": "application/json.*"
+                }
+              ]
+            }
+          }
+        },
+        "status": 200
+      },
+      "type": "Synchronous/HTTP"
+    },
+    {
+      "comments": {
+        "references": {
+          "qits-call": {
+            "app": "qits-artifacts-service",
+            "operationId": "getDocsVersion"
+          },
+          "qits-trigger": {
+            "app": "qits-docs-service",
+            "kind": "operation",
+            "operationId": "GET /docs/api/version"
+          }
+        }
+      },
+      "description": "GET /docs/api/version: getDocsVersion",
+      "key": "9edac26a",
+      "pending": false,
+      "providerStates": [
+        {
+          "name": "no docs bundle published for the coordinate",
+          "params": {
+            "path": "index.html",
+            "site": "contract-docs-site",
+            "version": "2100.1.0"
+          }
+        }
+      ],
+      "request": {
+        "generators": {
+          "path": {
+            "dataType": "RAW",
+            "expression": "/artifacts/docs/docs/${site}/-/${version}",
+            "type": "ProviderState"
+          }
+        },
+        "method": "GET",
+        "path": "/artifacts/docs/docs/contract-docs-site/-/2100.1.0"
+      },
+      "response": {
+        "status": 404
+      },
+      "type": "Synchronous/HTTP"
+    },
+    {
+      "comments": {
+        "references": {
+          "qits-call": {
+            "app": "qits-artifacts-service",
+            "operationId": "listDocsVersions"
+          },
+          "qits-trigger": {
+            "app": "qits-docs-service",
+            "kind": "operation",
+            "operationId": "GET /docs/api/versions"
+          }
+        }
+      },
+      "description": "GET /docs/api/versions: listDocsVersions",
+      "key": "8c200282",
+      "pending": false,
+      "providerStates": [
+        {
+          "name": "a docs site published from two branches",
+          "params": {
+            "branch": "main",
+            "site": "contract-docs-site"
+          }
+        }
+      ],
+      "request": {
+        "generators": {
+          "path": {
+            "dataType": "RAW",
+            "expression": "/artifacts/docs/docs/${site}",
+            "type": "ProviderState"
+          }
+        },
+        "method": "GET",
+        "path": "/artifacts/docs/docs/contract-docs-site",
+        "query": {
+          "meta.git.branch.name": [
+            "main"
+          ]
+        }
+      },
+      "response": {
+        "body": {
+          "content": {
+            "versions": [
+              {
+                "fileCount": 1,
+                "metadata": {
+                  "git.branch.name": "main"
+                },
+                "publishedAt": "2026-01-01T00:00:00Z",
+                "totalBytes": 44,
+                "version": "2100.1.0"
+              }
+            ]
+          },
+          "contentType": "application/json",
+          "encoded": false
+        },
+        "headers": {
+          "Content-Type": [
+            "application/json"
+          ]
+        },
+        "matchingRules": {
+          "body": {
+            "$.versions": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type",
+                  "min": 0
+                }
+              ]
+            },
+            "$.versions[*].fileCount": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "number"
+                }
+              ]
+            },
+            "$.versions[*].metadata['git.branch.name']": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.versions[*].publishedAt": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "regex",
+                  "regex": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}(:\\d{2}(\\.\\d{1,9})?)?(Z|[+-]\\d{2}:?\\d{2})$"
+                }
+              ]
+            },
+            "$.versions[*].totalBytes": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "number"
+                }
+              ]
+            },
+            "$.versions[*].version": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            }
+          },
+          "header": {
+            "Content-Type": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "regex",
+                  "regex": "application/json.*"
+                }
+              ]
+            }
+          }
+        },
+        "status": 200
+      },
+      "type": "Synchronous/HTTP"
+    },
+    {
+      "comments": {
+        "references": {
+          "qits-call": {
+            "app": "qits-artifacts-service",
+            "operationId": "listDocsVersions"
+          },
+          "qits-trigger": {
+            "app": "qits-docs-service",
+            "kind": "operation",
+            "operationId": "GET /docs/api/versions"
+          }
+        }
+      },
+      "description": "GET /docs/api/versions: listDocsVersions",
+      "key": "b5a1a51f",
+      "pending": false,
+      "providerStates": [
+        {
+          "name": "a published docs site",
+          "params": {
+            "path": "index.html",
+            "site": "contract-docs-site",
+            "version": "2100.1.0"
+          }
+        }
+      ],
+      "request": {
+        "generators": {
+          "path": {
+            "dataType": "RAW",
+            "expression": "/artifacts/docs/docs/${site}",
+            "type": "ProviderState"
+          }
+        },
+        "method": "GET",
+        "path": "/artifacts/docs/docs/contract-docs-site"
+      },
+      "response": {
+        "body": {
+          "content": {
+            "versions": [
+              {
+                "fileCount": 1,
+                "metadata": {
+                  "git.branch.name": "main"
+                },
+                "publishedAt": "2026-01-01T00:00:00Z",
+                "totalBytes": 44,
+                "version": "2100.1.0"
+              }
+            ]
+          },
+          "contentType": "application/json",
+          "encoded": false
+        },
+        "headers": {
+          "Content-Type": [
+            "application/json"
+          ]
+        },
+        "matchingRules": {
+          "body": {
+            "$.versions": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type",
+                  "min": 0
+                }
+              ]
+            },
+            "$.versions[*].fileCount": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "number"
+                }
+              ]
+            },
+            "$.versions[*].metadata['git.branch.name']": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.versions[*].publishedAt": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "regex",
+                  "regex": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}(:\\d{2}(\\.\\d{1,9})?)?(Z|[+-]\\d{2}:?\\d{2})$"
+                }
+              ]
+            },
+            "$.versions[*].totalBytes": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "number"
+                }
+              ]
+            },
+            "$.versions[*].version": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            }
+          },
+          "header": {
+            "Content-Type": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "regex",
+                  "regex": "application/json.*"
+                }
+              ]
+            }
+          }
+        },
+        "status": 200
+      },
+      "type": "Synchronous/HTTP"
+    },
+    {
+      "comments": {
+        "references": {
+          "qits-call": {
+            "app": "qits-artifacts-service",
+            "operationId": "listDocsVersions"
+          },
+          "qits-trigger": {
+            "app": "qits-docs-service",
+            "kind": "operation",
+            "operationId": "GET /docs/api/versions"
+          }
+        }
+      },
+      "description": "GET /docs/api/versions: listDocsVersions",
+      "key": "59b133b2",
+      "pending": false,
+      "providerStates": [
+        {
+          "name": "no docs bundle published for the coordinate",
+          "params": {
+            "path": "index.html",
+            "site": "contract-docs-site",
+            "version": "2100.1.0"
+          }
+        }
+      ],
+      "request": {
+        "generators": {
+          "path": {
+            "dataType": "RAW",
+            "expression": "/artifacts/docs/docs/${site}",
+            "type": "ProviderState"
+          }
+        },
+        "method": "GET",
+        "path": "/artifacts/docs/docs/contract-docs-site"
+      },
+      "response": {
+        "status": 404
+      },
+      "type": "Synchronous/HTTP"
+    },
+    {
+      "comments": {
+        "references": {
+          "qits-call": {
+            "app": "qits-artifacts-service",
+            "operationId": "getDocsFile"
+          },
+          "qits-trigger": {
+            "app": "qits-docs-service",
+            "kind": "operation",
+            "operationId": "GET /docs/{site}/-/{version}/{path}"
+          }
+        }
+      },
+      "description": "GET /docs/{site}/-/{version}/{path}: getDocsFile",
+      "key": "79013568",
+      "pending": false,
+      "providerStates": [
+        {
+          "name": "a published docs site",
+          "params": {
+            "path": "index.html",
+            "site": "contract-docs-site",
+            "version": "2100.1.0"
+          }
+        }
+      ],
+      "request": {
+        "generators": {
+          "path": {
+            "dataType": "RAW",
+            "expression": "/artifacts/docs/docs/${site}/-/${version}/${path}",
+            "type": "ProviderState"
+          }
+        },
+        "method": "GET",
+        "path": "/artifacts/docs/docs/contract-docs-site/-/2100.1.0/index.html"
+      },
+      "response": {
+        "headers": {
+          "Content-Type": [
+            "text/html; charset=utf-8"
+          ],
+          "ETag": [
+            "\"b5b5c49e35d128ab5d50b2413c6bbddd2d77feeb6f6ea387d6ed9e4e12ad263b\""
+          ]
+        },
+        "matchingRules": {
+          "header": {
+            "Content-Type": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "regex",
+                  "regex": ".+"
+                }
+              ]
+            },
+            "ETag": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "regex",
+                  "regex": ".+"
+                }
+              ]
+            }
+          }
+        },
+        "status": 200
+      },
+      "type": "Synchronous/HTTP"
+    },
+    {
+      "comments": {
+        "references": {
+          "qits-call": {
+            "app": "qits-artifacts-service",
+            "operationId": "getDocsFile"
+          },
+          "qits-trigger": {
+            "app": "qits-docs-service",
+            "kind": "operation",
+            "operationId": "GET /docs/{site}/-/{version}/{path}"
+          }
+        }
+      },
+      "description": "GET /docs/{site}/-/{version}/{path}: getDocsFile",
+      "key": "1d10c3fb",
+      "pending": false,
+      "providerStates": [
+        {
+          "name": "no docs bundle published for the coordinate",
+          "params": {
+            "path": "index.html",
+            "site": "contract-docs-site",
+            "version": "2100.1.0"
+          }
+        }
+      ],
+      "request": {
+        "generators": {
+          "path": {
+            "dataType": "RAW",
+            "expression": "/artifacts/docs/docs/${site}/-/${version}/${path}",
+            "type": "ProviderState"
+          }
+        },
+        "method": "GET",
+        "path": "/artifacts/docs/docs/contract-docs-site/-/2100.1.0/index.html"
+      },
+      "response": {
+        "status": 404
+      },
+      "type": "Synchronous/HTTP"
+    },
+    {
+      "comments": {
+        "references": {
+          "qits-call": {
+            "app": "qits-artifacts-service",
+            "operationId": "listDocsVersions"
+          },
+          "qits-trigger": {
+            "app": "qits-docs-service",
+            "kind": "operation",
+            "operationId": "GET /docs/{site}"
+          }
+        }
+      },
+      "description": "GET /docs/{site}: listDocsVersions",
+      "key": "3f53bf98",
+      "pending": false,
+      "providerStates": [
+        {
+          "name": "a published docs site",
+          "params": {
+            "path": "index.html",
+            "site": "contract-docs-site",
+            "version": "2100.1.0"
+          }
+        }
+      ],
+      "request": {
+        "generators": {
+          "path": {
+            "dataType": "RAW",
+            "expression": "/artifacts/docs/docs/${site}",
+            "type": "ProviderState"
+          }
+        },
+        "method": "GET",
+        "path": "/artifacts/docs/docs/contract-docs-site"
+      },
+      "response": {
+        "body": {
+          "content": {
+            "versions": [
+              {
+                "version": "2100.1.0"
+              }
+            ]
+          },
+          "contentType": "application/json",
+          "encoded": false
+        },
+        "headers": {
+          "Content-Type": [
+            "application/json"
+          ]
+        },
+        "matchingRules": {
+          "body": {
+            "$.versions": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type",
+                  "min": 0
+                }
+              ]
+            },
+            "$.versions[*].version": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            }
+          },
+          "header": {
+            "Content-Type": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "regex",
+                  "regex": "application/json.*"
+                }
+              ]
+            }
+          }
+        },
+        "status": 200
+      },
+      "type": "Synchronous/HTTP"
+    },
+    {
+      "comments": {
+        "references": {
+          "qits-call": {
+            "app": "qits-artifacts-service",
+            "operationId": "listDocsVersions"
+          },
+          "qits-trigger": {
+            "app": "qits-docs-service",
+            "kind": "operation",
+            "operationId": "GET /docs/{site}"
+          }
+        }
+      },
+      "description": "GET /docs/{site}: listDocsVersions",
+      "key": "e3634e2b",
+      "pending": false,
+      "providerStates": [
+        {
+          "name": "no docs bundle published for the coordinate",
+          "params": {
+            "path": "index.html",
+            "site": "contract-docs-site",
+            "version": "2100.1.0"
+          }
+        }
+      ],
+      "request": {
+        "generators": {
+          "path": {
+            "dataType": "RAW",
+            "expression": "/artifacts/docs/docs/${site}",
+            "type": "ProviderState"
+          }
+        },
+        "method": "GET",
+        "path": "/artifacts/docs/docs/contract-docs-site"
+      },
+      "response": {
+        "status": 404
+      },
+      "type": "Synchronous/HTTP"
+    }
+  ],
+  "metadata": {
+    "pactSpecification": {
+      "version": "4.0"
+    },
+    "plugins": []
+  },
+  "provider": {
+    "name": "qits-artifacts-service"
+  }
+}

@@ -5,13 +5,13 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import au.com.dius.pact.consumer.dsl.PactBuilder;
-import au.com.dius.pact.core.model.PactSpecVersion;
-import au.com.dius.pact.core.model.V4Pact;
-import eu.wohlben.qits.docs.contracts.GoldenMasters;
-import eu.wohlben.qits.docs.contracts.GoldenMasters.Trigger;
-import io.vertx.core.json.JsonArray;
+import com.fasterxml.jackson.databind.JsonNode;
+import eu.wohlben.qits.pact.consumer.ConsumerPact;
+import eu.wohlben.qits.pact.consumer.GoldenInteraction;
+import eu.wohlben.qits.pact.consumer.GoldenMasters;
+import eu.wohlben.qits.pact.consumer.Trigger;
 import io.vertx.core.json.JsonObject;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
@@ -22,244 +22,220 @@ import java.util.Map;
  * pacts/qits-docs-service_qits-artifacts-service.json}) are built from.
  *
  * <p>{@link DocsUpstream} makes every call this service makes to another service: four GETs on
- * qits-artifacts' docs repository. One row per (trigger, call, state). The trigger is this
- * service's own route; qits-artifacts' doors are raw Vert.x routes with no openapi, so the
- * operationIds here are the names this contract proposes for them.
- *
- * <p><b>Every row waits on qits-artifacts.</b> It publishes no golden masters yet, so each row
- * skips naming the provider state it needs — see {@link GoldenMasters#waitingFor}.
+ * qits-artifacts' docs repository. One row per (trigger, call, state). The request comes from
+ * qits-artifacts' recording; a row names only what this service reads of the answer.
  */
 final class ArtifactsContract {
 
-  /** One site with versions from two branches, each carrying metadata. */
+  static final String CONSUMER = "qits-docs-service";
+
+  static final GoldenMasters ARTIFACTS =
+      GoldenMasters.of("qits-artifacts-service", "qits-artifacts");
+
+  // --- qits-artifacts' provider states ----------------------------------------------------------
+
+  /** One site with one version on {@code main}, carrying metadata and one file. */
   static final String A_PUBLISHED_DOCS_SITE = "a published docs site";
 
-  /** The same, asked with the branch filter: the recording must hold the filtered answer. */
-  static final String A_DOCS_SITE_FILTERED_TO_A_BRANCH = "a docs site filtered to a branch";
+  /** A site with versions on two branches, asked with the branch filter. */
+  static final String PUBLISHED_FROM_TWO_BRANCHES = "a docs site published from two branches";
 
   /** A store that knows no site, version or file under the state's params. */
-  static final String A_DOCS_STORE_WITHOUT_THE_SITE = "a docs store without the site";
+  static final String NO_DOCS_BUNDLE = "no docs bundle published for the coordinate";
 
   static final String LIST_DOCS_SITES = "listDocsSites";
   static final String LIST_DOCS_VERSIONS = "listDocsVersions";
   static final String GET_DOCS_VERSION = "getDocsVersion";
   static final String GET_DOCS_FILE = "getDocsFile";
 
-  /** What this service does with {@link DocsUpstream} for one row, asserting what it read. */
-  @FunctionalInterface
-  interface Call {
-    void run(DocsUpstream upstream, Map<String, String> params, Case row);
-  }
+  // --- the triggers: this service's own routes --------------------------------------------------
 
-  record Case(
-      Trigger trigger,
-      String state,
-      String operationId,
-      Map<String, String> query,
-      List<String> consumes,
-      Call call) {
+  private static final Trigger SITES_ROUTE = Trigger.operation("GET /docs/api/sites");
+  private static final Trigger LATEST_ROUTE = Trigger.operation("GET /docs/{site}");
+  private static final Trigger VERSIONS_ROUTE = Trigger.operation("GET /docs/api/versions");
+  private static final Trigger VERSION_ROUTE = Trigger.operation("GET /docs/api/version");
+  private static final Trigger FILE_ROUTE =
+      Trigger.operation("GET /docs/{site}/-/{version}/{path}");
 
-    String description() {
-      return GoldenMasters.description(operationId, trigger);
-    }
-
-    boolean recorded() {
-      return GoldenMasters.recorded(state, operationId);
-    }
-
-    String waitingFor() {
-      return GoldenMasters.waitingFor(state, operationId);
-    }
-  }
-
-  // --- what each call reads ---------------------------------------------------------------------
-
-  private static final List<String> CATALOG =
-      List.of("$.sites[*].name", "$.sites[*].versionCount", "$.sites[*].latestVersion");
-
-  private static final List<String> VERSION_NAMES = List.of("$.versions[*].version");
-
-  private static final List<String> VERSION_DETAILS =
-      List.of(
-          "$.versions[*].version",
-          "$.versions[*].fileCount",
-          "$.versions[*].totalBytes",
-          "$.versions[*].publishedAt",
-          "$.versions[*].metadata");
-
-  /** The version document is passed through verbatim: this service reads only "an object". */
-  private static final List<String> A_JSON_OBJECT = List.of("$");
-
-  private static final List<String> STATUS_ONLY = List.of();
-
-  private static final Map<String, String> NO_QUERY = Map.of();
-
-  private static final Map<String, String> BRANCH_QUERY =
-      Map.of("meta.git.branch.name", "{branch}");
-
-  // --- the calls --------------------------------------------------------------------------------
+  // --- the rows ---------------------------------------------------------------------------------
 
   /** {@code GET <store>}: the catalog, grouped by scope in {@code /docs/api/sites}. */
-  private static final Call CATALOG_CALL =
-      (upstream, params, row) -> {
-        List<DocsUpstream.CatalogEntry> catalog = upstream.catalog();
-        JsonArray sites = recorded(row).getJsonArray("sites");
-        assertEquals(sites.size(), catalog.size());
-        JsonObject first = sites.getJsonObject(0);
-        assertEquals(first.getString("name"), catalog.get(0).name());
-        assertEquals(first.getInteger("versionCount"), catalog.get(0).versionCount());
-        assertEquals(first.getString("latestVersion"), catalog.get(0).latestVersion());
-      };
+  static final GoldenInteraction CATALOG =
+      GoldenInteraction.of(SITES_ROUTE, A_PUBLISHED_DOCS_SITE, LIST_DOCS_SITES)
+          .consumes("sites[].name", "sites[].versionCount", "sites[].latestVersion");
 
   /** {@code GET <store>/<site>}: only the version names, to resolve {@code latest}. */
-  private static final Call LATEST_CALL =
-      (upstream, params, row) -> {
-        List<String> versions = upstream.versions(params.get("site"));
-        JsonArray recorded = recorded(row).getJsonArray("versions");
-        assertEquals(recorded.size(), versions.size());
-        assertEquals(recorded.getJsonObject(0).getString("version"), versions.get(0));
-      };
+  static final GoldenInteraction LATEST =
+      GoldenInteraction.of(LATEST_ROUTE, A_PUBLISHED_DOCS_SITE, LIST_DOCS_VERSIONS)
+          .consumes("versions[].version")
+          .anyLength("versions");
 
   /** {@code GET <store>/<site>}, 404: no such site, so {@code latest} answers 404 too. */
-  private static final Call LATEST_UNKNOWN_CALL =
-      (upstream, params, row) -> assertTrue(upstream.versions(params.get("site")).isEmpty());
+  static final GoldenInteraction LATEST_UNKNOWN =
+      GoldenInteraction.of(LATEST_ROUTE, NO_DOCS_BUNDLE, LIST_DOCS_VERSIONS);
 
-  /** {@code GET <store>/<site>[?meta.git.branch.name=]}: the versions with their figures. */
-  private static final Call DETAILS_CALL =
-      (upstream, params, row) -> {
-        String branch = row.query().isEmpty() ? null : params.get("branch");
-        List<DocsUpstream.Version> details = upstream.versionDetails(params.get("site"), branch);
-        assertNotNull(details);
-        JsonObject first = recorded(row).getJsonArray("versions").getJsonObject(0);
-        assertEquals(first.getString("version"), details.get(0).version());
-        assertEquals(first.getInteger("fileCount"), details.get(0).fileCount());
-        assertEquals(first.getLong("totalBytes"), details.get(0).totalBytes());
-        assertEquals(first.getString("publishedAt"), details.get(0).publishedAt());
-      };
+  private static final String[] VERSION_DETAILS = {
+    "versions[].version",
+    "versions[].fileCount",
+    "versions[].totalBytes",
+    "versions[].publishedAt",
+    "versions[].metadata"
+  };
 
-  private static final Call DETAILS_UNKNOWN_CALL =
-      (upstream, params, row) -> assertNull(upstream.versionDetails(params.get("site"), null));
+  /** {@code GET <store>/<site>}: the versions with their figures, metadata passed through. */
+  static final GoldenInteraction DETAILS =
+      GoldenInteraction.of(VERSIONS_ROUTE, A_PUBLISHED_DOCS_SITE, LIST_DOCS_VERSIONS)
+          .consumes(VERSION_DETAILS)
+          .anyLength("versions");
 
-  /** {@code GET <store>/<site>/-/<version>}: passed through, so only "is it an object". */
-  private static final Call DOCUMENT_CALL =
-      (upstream, params, row) ->
-          assertNotNull(upstream.versionDocument(params.get("site"), params.get("version")));
+  /** {@code GET <store>/<site>?meta.git.branch.name=<branch>}: the same, pushed upstream. */
+  static final GoldenInteraction DETAILS_ON_A_BRANCH =
+      GoldenInteraction.of(VERSIONS_ROUTE, PUBLISHED_FROM_TWO_BRANCHES, LIST_DOCS_VERSIONS)
+          .consumes(VERSION_DETAILS)
+          .anyLength("versions");
 
-  private static final Call DOCUMENT_UNKNOWN_CALL =
-      (upstream, params, row) ->
-          assertNull(upstream.versionDocument(params.get("site"), params.get("version")));
+  static final GoldenInteraction DETAILS_UNKNOWN =
+      GoldenInteraction.of(VERSIONS_ROUTE, NO_DOCS_BUNDLE, LIST_DOCS_VERSIONS);
 
-  /** {@code GET <store>/<site>/-/<version>/<path>}: the bytes are streamed, the status read. */
-  private static Call fileCall(int status) {
-    return (upstream, params, row) -> {
-      try (DocsUpstream.Fetched fetched =
-          upstream.fetch(params.get("site"), params.get("version"), params.get("path"))) {
-        assertEquals(status, fetched.status());
-      }
-    };
+  /**
+   * {@code GET <store>/<site>/-/<version>}: passed through verbatim to the client, which reads
+   * {@code files} and {@code metadata} to decide how to show the bundle.
+   */
+  static final GoldenInteraction DOCUMENT =
+      GoldenInteraction.of(VERSION_ROUTE, A_PUBLISHED_DOCS_SITE, GET_DOCS_VERSION)
+          .consumes("files", "metadata")
+          .anyLength("files");
+
+  static final GoldenInteraction DOCUMENT_UNKNOWN =
+      GoldenInteraction.of(VERSION_ROUTE, NO_DOCS_BUNDLE, GET_DOCS_VERSION);
+
+  /**
+   * {@code GET <store>/<site>/-/<version>/<path>}: the bytes are streamed, the status read, and
+   * {@code Content-Type} and {@code ETag} passed on. {@code Content-Length} is passed on too, but a
+   * pact with no body cannot bind it.
+   */
+  static final GoldenInteraction FILE =
+      GoldenInteraction.of(FILE_ROUTE, A_PUBLISHED_DOCS_SITE, GET_DOCS_FILE)
+          .readsHeader("Content-Type", "ETag");
+
+  static final GoldenInteraction FILE_UNKNOWN =
+      GoldenInteraction.of(FILE_ROUTE, NO_DOCS_BUNDLE, GET_DOCS_FILE);
+
+  static final ConsumerPact PACT =
+      ConsumerPact.of(
+          CONSUMER,
+          ARTIFACTS,
+          CATALOG,
+          LATEST,
+          LATEST_UNKNOWN,
+          DETAILS,
+          DETAILS_ON_A_BRANCH,
+          DETAILS_UNKNOWN,
+          DOCUMENT,
+          DOCUMENT_UNKNOWN,
+          FILE,
+          FILE_UNKNOWN);
+
+  // --- what this service does with each row's answer --------------------------------------------
+
+  /** What {@link DocsUpstream} does for one row, asserting what it read. */
+  @FunctionalInterface
+  interface Call {
+    void run(DocsUpstream upstream, Map<String, String> params, GoldenInteraction row);
   }
 
-  private static final String SITES_ROUTE = "GET /docs/api/sites";
-  private static final String LATEST_ROUTE = "GET /docs/{site}";
-  private static final String VERSIONS_ROUTE = "GET /docs/api/versions";
-  private static final String VERSION_ROUTE = "GET /docs/api/version";
-  private static final String FILE_ROUTE = "GET /docs/{site}/-/{version}/{path}";
+  static final Map<GoldenInteraction, Call> CALLS =
+      Map.ofEntries(
+          Map.entry(CATALOG, ArtifactsContract::catalog),
+          Map.entry(LATEST, ArtifactsContract::latest),
+          Map.entry(
+              LATEST_UNKNOWN,
+              (upstream, params, row) ->
+                  assertTrue(upstream.versions(params.get("site")).isEmpty())),
+          Map.entry(DETAILS, ArtifactsContract::details),
+          Map.entry(DETAILS_ON_A_BRANCH, ArtifactsContract::details),
+          Map.entry(
+              DETAILS_UNKNOWN,
+              (upstream, params, row) ->
+                  assertNull(upstream.versionDetails(params.get("site"), null))),
+          Map.entry(DOCUMENT, ArtifactsContract::document),
+          Map.entry(
+              DOCUMENT_UNKNOWN,
+              (upstream, params, row) ->
+                  assertNull(upstream.versionDocument(params.get("site"), params.get("version")))),
+          Map.entry(FILE, ArtifactsContract::file),
+          Map.entry(FILE_UNKNOWN, ArtifactsContract::file));
 
-  static final List<Case> CASES =
-      List.of(
-          new Case(
-              Trigger.route(SITES_ROUTE),
-              A_PUBLISHED_DOCS_SITE,
-              LIST_DOCS_SITES,
-              NO_QUERY,
-              CATALOG,
-              CATALOG_CALL),
-          new Case(
-              Trigger.route(LATEST_ROUTE),
-              A_PUBLISHED_DOCS_SITE,
-              LIST_DOCS_VERSIONS,
-              NO_QUERY,
-              VERSION_NAMES,
-              LATEST_CALL),
-          new Case(
-              Trigger.route(LATEST_ROUTE),
-              A_DOCS_STORE_WITHOUT_THE_SITE,
-              LIST_DOCS_VERSIONS,
-              NO_QUERY,
-              STATUS_ONLY,
-              LATEST_UNKNOWN_CALL),
-          new Case(
-              Trigger.route(VERSIONS_ROUTE),
-              A_PUBLISHED_DOCS_SITE,
-              LIST_DOCS_VERSIONS,
-              NO_QUERY,
-              VERSION_DETAILS,
-              DETAILS_CALL),
-          new Case(
-              Trigger.route(VERSIONS_ROUTE),
-              A_DOCS_SITE_FILTERED_TO_A_BRANCH,
-              LIST_DOCS_VERSIONS,
-              BRANCH_QUERY,
-              VERSION_DETAILS,
-              DETAILS_CALL),
-          new Case(
-              Trigger.route(VERSIONS_ROUTE),
-              A_DOCS_STORE_WITHOUT_THE_SITE,
-              LIST_DOCS_VERSIONS,
-              NO_QUERY,
-              STATUS_ONLY,
-              DETAILS_UNKNOWN_CALL),
-          new Case(
-              Trigger.route(VERSION_ROUTE),
-              A_PUBLISHED_DOCS_SITE,
-              GET_DOCS_VERSION,
-              NO_QUERY,
-              A_JSON_OBJECT,
-              DOCUMENT_CALL),
-          new Case(
-              Trigger.route(VERSION_ROUTE),
-              A_DOCS_STORE_WITHOUT_THE_SITE,
-              GET_DOCS_VERSION,
-              NO_QUERY,
-              STATUS_ONLY,
-              DOCUMENT_UNKNOWN_CALL),
-          new Case(
-              Trigger.route(FILE_ROUTE),
-              A_PUBLISHED_DOCS_SITE,
-              GET_DOCS_FILE,
-              NO_QUERY,
-              STATUS_ONLY,
-              fileCall(200)),
-          new Case(
-              Trigger.route(FILE_ROUTE),
-              A_DOCS_STORE_WITHOUT_THE_SITE,
-              GET_DOCS_FILE,
-              NO_QUERY,
-              STATUS_ONLY,
-              fileCall(404)));
+  private static void catalog(
+      DocsUpstream upstream, Map<String, String> params, GoldenInteraction row) {
+    List<DocsUpstream.CatalogEntry> catalog = upstream.catalog();
+    JsonNode sites = recorded(row).path("sites");
+    assertEquals(sites.size(), catalog.size());
+    JsonNode first = sites.get(0);
+    assertEquals(first.path("name").asText(), catalog.get(0).name());
+    assertEquals(first.path("versionCount").asInt(), catalog.get(0).versionCount());
+    assertEquals(first.path("latestVersion").asText(), catalog.get(0).latestVersion());
+  }
+
+  private static void latest(
+      DocsUpstream upstream, Map<String, String> params, GoldenInteraction row) {
+    List<String> versions = upstream.versions(params.get("site"));
+    JsonNode recorded = recorded(row).path("versions");
+    assertEquals(recorded.size(), versions.size());
+    assertEquals(recorded.get(0).path("version").asText(), versions.get(0));
+  }
+
+  private static void details(
+      DocsUpstream upstream, Map<String, String> params, GoldenInteraction row) {
+    // The branch is pushed upstream as the store's own filter; the recording names the query.
+    String branch = params.get("branch");
+    List<DocsUpstream.Version> details = upstream.versionDetails(params.get("site"), branch);
+    assertNotNull(details);
+    JsonNode first = recorded(row).path("versions").get(0);
+    DocsUpstream.Version read = details.get(0);
+    assertEquals(first.path("version").asText(), read.version());
+    assertEquals(first.path("fileCount").asInt(), read.fileCount());
+    assertEquals(first.path("totalBytes").asLong(), read.totalBytes());
+    assertEquals(first.path("publishedAt").asText(), read.publishedAt());
+    assertEquals(new JsonObject(first.path("metadata").toString()), read.metadata());
+  }
+
+  private static void document(
+      DocsUpstream upstream, Map<String, String> params, GoldenInteraction row) {
+    JsonObject document = upstream.versionDocument(params.get("site"), params.get("version"));
+    assertNotNull(document);
+    JsonNode recorded = recorded(row);
+    assertEquals(recorded.path("files").size(), document.getJsonArray("files").size());
+    assertEquals(
+        new JsonObject(recorded.path("metadata").toString()), document.getJsonObject("metadata"));
+  }
+
+  private static void file(
+      DocsUpstream upstream, Map<String, String> params, GoldenInteraction row) {
+    GoldenMasters.Operation op = ARTIFACTS.operation(row.state(), row.operationId());
+    try (DocsUpstream.Fetched fetched =
+        upstream.fetch(params.get("site"), params.get("version"), params.get("path"))) {
+      assertEquals(op.status(), fetched.status());
+      for (String header : row.readsHeaders()) {
+        String read = "ETag".equals(header) ? fetched.etag() : fetched.contentType();
+        assertEquals(op.responseHeader(header), read, header);
+      }
+    }
+  }
+
+  private static JsonNode recorded(GoldenInteraction row) {
+    return ARTIFACTS.json(row.state(), row.operationId());
+  }
+
+  /** The bean as CDI would build it, against the mock server's address (no path). */
+  static DocsUpstream upstreamAgainst(String baseUrl) {
+    DocsUpstream upstream = new DocsUpstream();
+    upstream.artifactsUrl = baseUrl;
+    upstream.connectTimeout = Duration.ofSeconds(2);
+    upstream.requestTimeout = Duration.ofSeconds(10);
+    upstream.open();
+    return upstream;
+  }
 
   private ArtifactsContract() {}
-
-  private static JsonObject recorded(Case row) {
-    return GoldenMasters.json(row.state(), row.operationId());
-  }
-
-  /** The rows whose provider state qits-artifacts does not record yet. */
-  static List<Case> waiting() {
-    return CASES.stream().filter(c -> !c.recorded()).toList();
-  }
-
-  static V4Pact pact() {
-    return pact(CASES);
-  }
-
-  static V4Pact pact(List<Case> cases) {
-    PactBuilder builder =
-        new PactBuilder(GoldenMasters.CONSUMER, GoldenMasters.PROVIDER, PactSpecVersion.V4);
-    for (Case c : cases) {
-      GoldenMasters.interaction(
-          builder, c.state(), c.operationId(), c.trigger(), c.query(), c.consumes());
-    }
-    return builder.toPact();
-  }
 }

@@ -3,6 +3,7 @@ package eu.wohlben.qits.docs.contracts;
 import static io.restassured.RestAssured.given;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import eu.wohlben.qits.pact.consumer.GoldenFiles;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.restassured.response.Response;
@@ -95,7 +96,8 @@ class GoldenMasterRecordingTest {
 
   @Test
   void theCommittedGoldenMastersAreWhatQitsDocsAnswers() {
-    Path root = GoldenFiles.repositoryRoot().resolve("golden-masters");
+    // A single-module repository: surefire runs in the repository root.
+    Path root = Path.of("golden-masters").toAbsolutePath();
     List<String> failures = new ArrayList<>();
     JsonArray states = new JsonArray();
     for (Map.Entry<String, List<Recorded>> entry : RECORDINGS.entrySet()) {

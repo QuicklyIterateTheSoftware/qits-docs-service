@@ -81,6 +81,12 @@
              service's calls to qits-artifacts); the provider half is contracts/
              ConsumerPactVerificationTest. -->
         <pact.version>4.6.21</pact.version>
+        <!-- The consumer pact's two inputs (qits-1149), both test scope and both EXACT, never a
+             range: a newer recording is a pact change. qits-pact-consumer is the estate's shared
+             golden-master reader (out of qits-integrations-quarkus-javalib);
+             qits-artifacts-golden-masters is what qits-artifacts-service answers in each state. -->
+        <qits.pact-consumer.version>2026.1010.140259</qits.pact-consumer.version>
+        <qits.artifacts-golden-masters.version>2026.1010.133922</qits.artifacts-golden-masters.version>
     </properties>
 
     <dependencyManagement>
@@ -177,6 +183,20 @@
             <groupId>au.com.dius.pact.consumer</groupId>
             <artifactId>junit5</artifactId>
             <version>${pact.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <!-- Reads qits-artifacts' recordings off the test classpath and turns each
+                 (state, operation) into a pact row that binds only what DocsUpstream reads. -->
+            <groupId>eu.wohlben.qits</groupId>
+            <artifactId>qits-pact-consumer</artifactId>
+            <version>${qits.pact-consumer.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>eu.wohlben.qits</groupId>
+            <artifactId>qits-artifacts-golden-masters</artifactId>
+            <version>${qits.artifacts-golden-masters.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>

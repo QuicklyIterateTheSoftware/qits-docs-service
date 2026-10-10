@@ -1,17 +1,12 @@
 package eu.wohlben.qits.docs;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import au.com.dius.pact.consumer.ConsumerPactRunnerKt;
-import au.com.dius.pact.consumer.PactVerificationResult;
-import au.com.dius.pact.consumer.model.MockProviderConfig;
-import au.com.dius.pact.core.model.PactSpecVersion;
-import eu.wohlben.qits.docs.contracts.GoldenMasters;
-import java.time.Duration;
-import java.util.List;
+import eu.wohlben.qits.pact.consumer.GoldenInteraction;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.DynamicTest;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestFactory;
 
 /**
@@ -19,9 +14,8 @@ import org.junit.jupiter.api.TestFactory;
  * DocsUpstream} making real HTTP calls to a pact-jvm mock server that answers what {@link
  * ArtifactsContract}'s row promises, and the row's own assertions on what it read.
  *
- * <p>One dynamic test per row, one mock server per row (two rows send the identical request and
- * differ only in their trigger). A row whose provider state qits-artifacts does not record yet is
- * SKIPPED, naming the state — it runs the day the golden masters land on the classpath.
+ * <p>One dynamic test per row, one mock server per row. A row whose provider state qits-artifacts
+ * does not record is skipped, naming the state.
  */
 class ArtifactsConsumerPactTest {
 
@@ -30,40 +24,29 @@ class ArtifactsConsumerPactTest {
     System.setProperty("pact_do_not_track", "true");
   }
 
+  @Test
+  void everyRowHasItsCall() {
+    assertEquals(ArtifactsContract.PACT.rows().size(), ArtifactsContract.CALLS.size());
+  }
+
   @TestFactory
   Stream<DynamicTest> everyRowIsWhatDocsUpstreamAsksAndReads() {
-    assertFalse(ArtifactsContract.CASES.isEmpty());
-    return ArtifactsContract.CASES.stream()
+    return ArtifactsContract.PACT.rows().stream()
         .map(
             row ->
                 DynamicTest.dynamicTest(
                     row.description() + " [" + row.state() + "]", () -> verify(row)));
   }
 
-  private static void verify(ArtifactsContract.Case row) {
-    Assumptions.assumeTrue(row.recorded(), row.waitingFor());
-    PactVerificationResult result =
-        ConsumerPactRunnerKt.runConsumerTest(
-            ArtifactsContract.pact(List.of(row)),
-            MockProviderConfig.createDefault(PactSpecVersion.V4),
-            (mockServer, context) -> {
-              row.call()
-                  .run(
-                      upstreamAgainst(mockServer.getUrl()), GoldenMasters.params(row.state()), row);
-              return null;
-            });
-    if (!(result instanceof PactVerificationResult.Ok)) {
-      throw new AssertionError(row.description() + " [" + row.state() + "]: " + result);
-    }
-  }
-
-  /** The bean as CDI would build it, against the mock server's address (no path). */
-  private static DocsUpstream upstreamAgainst(String baseUrl) {
-    DocsUpstream upstream = new DocsUpstream();
-    upstream.artifactsUrl = baseUrl;
-    upstream.connectTimeout = Duration.ofSeconds(2);
-    upstream.requestTimeout = Duration.ofSeconds(10);
-    upstream.open();
-    return upstream;
+  private static void verify(GoldenInteraction row) {
+    Assumptions.assumeTrue(
+        ArtifactsContract.ARTIFACTS.recorded(row.state(), row.operationId()),
+        () -> ArtifactsContract.PACT.needs(row));
+    ArtifactsContract.PACT.run(
+        row,
+        (url, recorded) ->
+            ArtifactsContract.CALLS
+                .get(row)
+                .run(ArtifactsContract.upstreamAgainst(url), recorded.params(), row));
   }
 }
