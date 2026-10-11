@@ -86,7 +86,7 @@
              golden-master reader (out of qits-integrations-quarkus-javalib);
              qits-artifacts-golden-masters is what qits-artifacts-service answers in each state. -->
         <qits.pact-consumer.version>2026.1010.141817</qits.pact-consumer.version>
-        <qits.artifacts-golden-masters.version>2026.1010.133922</qits.artifacts-golden-masters.version>
+        <qits.artifacts-golden-masters.version>2026.1011.62405</qits.artifacts-golden-masters.version>
     </properties>
 
     <dependencyManagement>
