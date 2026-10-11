@@ -87,6 +87,11 @@
              qits-artifacts-golden-masters is what qits-artifacts-service answers in each state. -->
         <qits.pact-consumer.version>2026.1010.141817</qits.pact-consumer.version>
         <qits.artifacts-golden-masters.version>2026.1010.133922</qits.artifacts-golden-masters.version>
+        <!-- qits-http-core: QitsHttpClients.wrap puts a CLIENT span and X-Qits-Caller on the one
+             outbound java.net.http.HttpClient this service builds, to qits-artifacts — the same
+             way quarkus-opentelemetry already does for the REST client. Published by
+             qits-integrations-quarkus, like qits-userflows above. -->
+        <qits.http-core.version>0-qits-1198-local</qits.http-core.version>
     </properties>
 
     <dependencyManagement>
@@ -132,6 +137,15 @@
                  defaults are gRPC to localhost:4317 and the receiver speaks HTTP/protobuf. -->
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-opentelemetry</artifactId>
+        </dependency>
+        <dependency>
+            <!-- QitsHttpClients wraps DocsUpstream's outbound HttpClient to qits-artifacts, and
+                 this is also the app module whose jandex index CallerServerFilter /
+                 CallerClientFilter need to be discovered from, so the inbound request this service
+                 serves records its own X-Qits-Caller too. -->
+            <groupId>eu.wohlben.qits</groupId>
+            <artifactId>qits-http-core</artifactId>
+            <version>${qits.http-core.version}</version>
         </dependency>
 
         <dependency>

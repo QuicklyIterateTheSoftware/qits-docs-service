@@ -1,9 +1,11 @@
 package eu.wohlben.qits.docs;
 
+import eu.wohlben.qits.http.QitsHttpClients;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -80,6 +82,8 @@ public class DocsUpstream {
   @ConfigProperty(name = "qits.docs.request-timeout", defaultValue = "PT30S")
   Duration requestTimeout;
 
+  @Inject QitsHttpClients clients;
+
   private HttpClient http;
 
   /** {@link #storeRoot(String)} of {@link #artifactsUrl}, resolved once at construction. */
@@ -87,7 +91,9 @@ public class DocsUpstream {
 
   @PostConstruct
   void open() {
-    http = HttpClient.newBuilder().connectTimeout(connectTimeout).build();
+    // Wrapped through QitsHttpClients so this call to qits-artifacts opens a CLIENT span and
+    // carries X-Qits-Caller, the same way quarkus-opentelemetry already does for the REST client.
+    http = clients.wrap(HttpClient.newBuilder().connectTimeout(connectTimeout).build());
     storeRoot = storeRoot(artifactsUrl);
   }
 

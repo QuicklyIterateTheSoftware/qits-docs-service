@@ -6,10 +6,12 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import eu.wohlben.qits.http.QitsHttpClients;
 import eu.wohlben.qits.pact.consumer.ConsumerPact;
 import eu.wohlben.qits.pact.consumer.GoldenInteraction;
 import eu.wohlben.qits.pact.consumer.GoldenMasters;
 import eu.wohlben.qits.pact.consumer.Trigger;
+import io.opentelemetry.api.OpenTelemetry;
 import io.vertx.core.json.JsonObject;
 import java.time.Duration;
 import java.util.List;
@@ -233,6 +235,7 @@ final class ArtifactsContract {
     upstream.artifactsUrl = baseUrl;
     upstream.connectTimeout = Duration.ofSeconds(2);
     upstream.requestTimeout = Duration.ofSeconds(10);
+    upstream.clients = QitsHttpClients.of(OpenTelemetry.noop(), null);
     upstream.open();
     return upstream;
   }
