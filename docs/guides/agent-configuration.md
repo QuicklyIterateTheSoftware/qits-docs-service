@@ -120,23 +120,22 @@ asserted rather than assumed.
 `seedIfAbsent` is **insert-if-absent, never upsert**. An operator's edit has to survive every
 subsequent boot.
 
-### Narrowing crosses the host seam
+### The host serves the servers
 
 The document says *which* servers attach, in which order, with which pre-approval, and whether they
 are read-only fenced — policy, edited in one place, travelling with the container. The **host** says
-how a server key becomes a url at a given scope — addressing, needing ids the library deliberately
-does not have. So a configured attachment is looked up in what the host offers for the launch's
-scope, through `AgentMcpServers.serverFor(key, scope, narrowing)`.
+where a server is. So a configured attachment is looked up in what the host offers, through
+`AgentMcpServers.serverFor(key, scope)`. Since qits-1174 the only platform server is `qits`, scoped
+by the caller's own bearer, so the scope changes nothing and the narrowing flags on an attachment
+are read but not used.
 
 Two consequences worth knowing:
 
-- **A configuration naming a server the host does not serve at that scope refuses the launch.** A
-  session missing a server it was configured with looks entirely normal and simply cannot do half
-  its job.
-- **A host that has not adopted the narrowing seam is flagged, not silent.** The default
-  implementation ignores the narrowing and answers the scope's own mapping;
-  `AgentMcpServers.honoursNarrowing()` is then false and each such launch records a note saying its
-  addressing was the host's rather than the document's.
+- **A configuration naming a server the host does not serve refuses the launch.** A session missing
+  a server it was configured with looks entirely normal and simply cannot do half its job.
+- **Two cases are skipped, not refused.** A retired server (`repository`, `actions`,
+  `observability`) on a stored surface, and `qits` on a host with no address for it. The launch goes
+  on without it and its record says so.
 
 ### What is deliberately not in the record
 

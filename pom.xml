@@ -6,7 +6,7 @@
 
     <groupId>eu.wohlben</groupId>
     <artifactId>qits-docs</artifactId>
-    <version>2026.1010.145959</version>
+    <version>2026.1011.180620</version>
     <packaging>quarkus</packaging>
 
     <name>qits-docs</name>
@@ -86,7 +86,7 @@
              golden-master reader (out of qits-integrations-quarkus-javalib);
              qits-artifacts-golden-masters is what qits-artifacts-service answers in each state. -->
         <qits.pact-consumer.version>2026.1010.141817</qits.pact-consumer.version>
-        <qits.artifacts-golden-masters.version>2026.1010.133922</qits.artifacts-golden-masters.version>
+        <qits.artifacts-golden-masters.version>2026.1011.62405</qits.artifacts-golden-masters.version>
         <!-- qits-http-core: QitsHttpClients.wrap puts a CLIENT span and X-Qits-Caller on the one
              outbound java.net.http.HttpClient this service builds, to qits-artifacts — the same
              way quarkus-opentelemetry already does for the REST client. Published by
