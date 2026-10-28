@@ -21,13 +21,10 @@ and the six of them are what emit `target/userstories/`, published per release r
 `@userflows/qits-docs` — into the store this service reads. They need no docker and no running
 qits-artifacts (the far side is an in-process stand-in on loopback), but they do need **Maven** to
 reach the platform's own repository for the one test-scope jar `qits-userflows`, which is the only
-qits dependency this pom has. Off the platform network that means the usual pair:
-
-    export QITS_MAVEN_REPOSITORY_URL=https://registry.qits.wohlben.eu/artifacts/maven/maven
-    export QITS_MAVEN_CENTRAL_URL=https://mirror.qits.wohlben.eu/mirror/maven/central
-    export QITS_MAVEN_AUTH_USR=<your commissioned client id>
-    export QITS_MAVEN_AUTH_PSW=<your commissioned client secret>
-    ./mvnw -s .qits-maven-settings.xml verify
+qits dependency this pom has. On a workstation that is the login `qits help guide --for
+workstation` sets up (`qits registry-login --configure`): its block in `~/.m2/settings.xml` mirrors
+the pom's `qits-maven` repository, so a plain `./mvnw verify` resolves it.
+`.qits-maven-settings.xml` is the CI and image build's settings file, not a workstation's.
 
 ## Why this exists rather than a path on qits-artifacts
 
