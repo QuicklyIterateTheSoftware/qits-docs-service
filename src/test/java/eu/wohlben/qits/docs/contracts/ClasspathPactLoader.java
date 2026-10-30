@@ -39,16 +39,16 @@ import java.util.stream.Stream;
  *
  * <p><b>{@code QITS_DEPLOYED_PACTS_DIR}</b>, when set and non-blank, is walked recursively for
  * every file whose name ends with {@code _<provider>.json} too — the same suffix match the
- * classpath scan uses — and each one is added as its own source, keyed by its file URL, loaded
- * and verified alongside the classpath ones (empty here as well, for the same reason the classpath
- * is: no consumer pact exists yet). The layout is {@code
+ * classpath scan uses — and each one is added as its own source, keyed by its file URL, loaded and
+ * verified alongside the classpath ones (empty here as well, for the same reason the classpath is:
+ * no consumer pact exists yet). The layout is {@code
  * <dir>/<consumer-repo>/<pactVersion>/<consumer>_<provider>.json}. The release gate sets it after
  * {@code qits artifacts fetch deployed-pacts}, so once a consumer exists, a verification run
- * against it would cover every deployed and rollback consumer version, not merely the one pinned
- * in the pom. The directory must exist when the variable is set, or this throws: a gate told to
- * verify deployed pacts and given none must fail, not pass. This copy still carries no {@code
- * REQUIRED} escape hatch — an empty result stays an empty verification, not an error, exactly as
- * the classpath-only case above.
+ * against it would cover every deployed and rollback consumer version, not merely the one pinned in
+ * the pom. The directory must exist when the variable is set, or this throws: a gate told to verify
+ * deployed pacts and given none must fail, not pass. This copy still carries no {@code REQUIRED}
+ * escape hatch — an empty result stays an empty verification, not an error, exactly as the
+ * classpath-only case above.
  */
 public class ClasspathPactLoader implements PactLoader {
 
