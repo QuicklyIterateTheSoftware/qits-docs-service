@@ -51,6 +51,11 @@
              ETags, and an upload route. stories/support/StoryStore is that API, standing in for it
              the way every sibling repository's peer stub stands in for its peers. -->
         <qits.userflows.version>2026.1028.231715</qits.userflows.version>
+        <!-- The platform's shared rules (test scope only), qits-1754: ProviderStateCoverageTest
+             checks that every state golden-masters/index.json records has its @State callback on
+             ConsumerPactVerificationTest. Published out of libs/qits-integrations-quarkus, like
+             qits-userflows above. -->
+        <qits.arch-rules.version>2026.1030.30851</qits.arch-rules.version>
         <!-- Where it comes from. The default is the public host, https://registry.qits.wohlben.eu,
              which answers 401 without the commissioned client; docker/Dockerfile derives the same
              address from its QITS_DOMAIN build arg for every build that runs elsewhere. -->
@@ -219,6 +224,13 @@
             <groupId>au.com.dius.pact.provider</groupId>
             <artifactId>junit5</artifactId>
             <version>${pact.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <!-- ProviderStateCoverageTest (qits-1754): the platform's shared rules. -->
+            <groupId>eu.wohlben.qits</groupId>
+            <artifactId>qits-arch-rules</artifactId>
+            <version>${qits.arch-rules.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
