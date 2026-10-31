@@ -479,8 +479,6 @@ Everything still on it is here for a reason that does not expire:
 - **The idp client registry.** `QITS_IDP_CLIENTS`, every `QITS_IDP_CLIENT_*_SECRET`, `_ROLES`,
   `_CLAIMS_*`. This is not one application's configuration — it is the estate's identity topology,
   authored as a whole, and it has to be consistent across services that are released independently.
-- **Audiences.** `QITS_IDP_CLIENT_*_AUDIENCES` and the `${IDP_AUDIENCES}` set they come from: same
-  argument, one estate-wide fact.
 - **Machine and OIDC switches.** The keys that decide *how a service authenticates at all*. A service
   that mis-declares one of these cannot be reached to have the mistake corrected.
 - **Tier names.** `QITS_ENVIRONMENT`, `QITS_EDGE_ENVIRONMENTS`, `QITS_EDGE_DEFAULT_ENVIRONMENT` and
