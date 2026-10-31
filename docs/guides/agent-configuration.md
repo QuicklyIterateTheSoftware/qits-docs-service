@@ -383,8 +383,8 @@ otherwise break this with nothing in any answer to say why.
 ## 6. External MCP servers, and the credential that is a reference
 
 Beside the three platform servers a surface toggles, qits-projects holds a catalog of **external**
-MCP servers: key, display name, url, an optional header name plus the qits-configuration key holding
-its value, and the tools pre-approved on it. Defined once platform-wide, attached per surface by key
+MCP servers: key, display name, url, an optional header name plus the credential key holding its
+value, and the tools pre-approved on it. Defined once platform-wide, attached per surface by key
 alone — a server is not re-entered with its token for each of eight surfaces.
 
 Four constraints come from the render path rather than from taste:
@@ -415,43 +415,34 @@ pointing back at the store. A delete is refused while any surface attaches the e
 (which is why the attachment table carries no foreign key: an FK would make that message unreachable
 and a 500 inevitable).
 
-### The credential is a key reference whose class will change under it
+### The credential is a key reference, stored by qits-projects itself
 
-The catalog stores **a qits-configuration key**, not material. Today it resolves to an ordinary
-`plain` entry, because qits-configuration's `secret` class does not exist yet. That is accepted on
-purpose — **the reference is the point**. When secrets management lands there, the same
-`(application, key)` pair is served as a secret and nothing in this model changes: no field moves,
-no editor changes, only the class of the entry behind the name.
+The catalog stores **a credential key**, not material. The value behind it lives in qits-projects'
+own `agent_mcp_credential` table (`control/AgentMcpCredentialStore`, qits-1394) and leaves that
+table only into the document a container is built from — no door answers it back.
 
-### The namespace: `env.<VAR>` under the reserved application `qits-agent-mcp`
+- **The key grammar is `env.<VAR>`** (`AgentMcpCatalog.requireCredentialKey`), checked on a catalog
+  write and on the credential doors alike, so a key that can be set is exactly a key an entry can
+  reference. The `env.` prefix is kept so references stored before the move stay valid; it renders
+  as nobody's environment variable.
+- **Set** one with `qits agent-mcp credentials set --key env.<VAR>`, the value on **stdin** (never a
+  flag, so it stays out of shell history; one trailing line break is taken off). A set replaces any
+  value stored before; a blank value or one over 16 KiB is a 400.
+- **List** with `qits agent-mcp credentials list` — keys and who set them, never a value.
+- **Delete** with `qits agent-mcp credentials delete --key env.<VAR>`.
 
-The epic left this open ("pick a non-colliding namespace, or an operator-class entry, and write down
-which"). It is settled in `control/AgentMcpCatalog`, and the reasoning is short:
+The doors behind those verbs, under `/projects/api/agent-mcp-catalog`:
 
-- **It cannot be a new key prefix.** qits-configuration addresses a value by `(env, application,
-  key)` and its key grammar is **closed** — `ConfigurationKeys.requireKey` accepts `env.<VAR>` and
-  the four indexed families (`mounts[i]`, `publishes[i]`, `groups[i]`, `aliases[i]`) and answers 400
-  to everything else. A `secrets.` or `mcp.` key could not be *written* over there, and widening
-  that grammar is another repository's change.
-- **So it is the application segment** — the axis that is open (`requireApplication` checks a dns
-  label and nothing more), and, better, the axis the concern is actually about. The worry was never
-  the three characters `env`; it was that the key would be an environment variable **of an
-  application**, injected into that application's container by the deployer. Under `qits-agent-mcp`,
-  which **nothing deploys**, it is not: no deployer renders these keys anywhere, and no
-  application's declaration can collide with them. That is precisely an operator-class entry,
-  spelled with the one grammar the store has.
-- **The application name is a constant, deliberately not configurable.** A per-deployment namespace
-  would be a per-deployment place for a credential to hide.
-- **Its entries are not flagged `orphaned`.** `qits-agent-mcp` has no declaration, and
-  qits-configuration flags nothing for an application without one: no declaration means "unknown",
-  not "unaccounted for". So its entries show as ordinary rows in qits-configuration's own listing.
+| Door | Roles |
+| --- | --- |
+| `PUT /credentials/{key}` `{"value": …}` | `qits:admin`, `qits:admin-agent` |
+| `DELETE /credentials/{key}` | `qits:admin`, `qits:admin-agent` |
+| `GET /credentials` — keys only | `qits:admin`, `qits:admin-agent`, `qits:desk-admin`, `qits:agent` |
 
-The read itself takes `qits:admin` or `qits:system` and has **no header fallback**, unlike the ci and
-maintenance hops: a forwarded `X-Qits-*` pair from a machine-driven document build carries neither
-role honestly, so with the named oidc client off the read is not attempted and the document fails
-naming the key. Nothing in that package logs a value at any level — a log line names the key, the
-status code or the exception, and never interpolates the value into any message, including an
-exception's.
+A catalog write naming a key nothing has set is a 400 at the form, and a document build whose
+reference has no value fails naming the key and the surface (above). Nothing in that package logs a
+value at any level — a log line names the key, the status code or the exception, and never
+interpolates the value into any message, including an exception's.
 
 ---
 
@@ -521,8 +512,9 @@ Named plainly, because each of these looks like it might be in and is not:
   external catalog entry's `allowedTools` is operator-editable.
 - **stdio / local-command MCP servers.** Url transport only (§6).
 - **Live reconfiguration of a running container.** Recreate only (§3).
-- **Building secrets management in qits-configuration.** The catalog references a key and takes
-  whatever class that key has; the `secret` class arrives on its own schedule (§6).
+- **A general secrets store.** The credential table holds external MCP credentials and nothing
+  else; per-installation values of a deployed application are deployer settings
+  (`deployment-settings.md`). (§6)
 - **Harness installation and version pinning** — the workspace image's business. This model reads
   what the installed harness reports; it does not choose which harness is installed.
 - **`.qits-config.yml`'s agent section**, which keeps working as-is. The resolution order is request
@@ -550,7 +542,8 @@ Named plainly, because each of these looks like it might be in and is not:
   listed is still settable. (§4)
 - Claude has effort levels and **no model listing**; Kimi has a model listing and **no effort
   concept**. A Kimi surface shows no effort control, not a disabled one. (§4)
-- The external-server credential is a **qits-configuration key reference**, `env.<VAR>` under the
-  reserved application `qits-agent-mcp`. Its class changes under it without the model changing. (§6)
+- The external-server credential is a **key reference**, `env.<VAR>`, into qits-projects' own
+  `agent_mcp_credential` table; `qits agent-mcp credentials set` writes it, nothing reads it back.
+  (§6)
 - Adding a surface is **additive**; renaming one is a wire break nobody's suite would notice. (§7)
 - A library fix needs a **daemon release**; a store edit needs a **container recreate**. (§8)

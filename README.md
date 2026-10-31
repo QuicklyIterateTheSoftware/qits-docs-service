@@ -113,15 +113,14 @@ this service's knowledge of its peer's API — as configurable as the `/-/` vers
 is to say not at all. `qits.observability.url` and its `/observability/api/otel` are the same split,
 and were before this one.
 
-Both keys are **declared**, in [`.config/qits/configuration.yml`](.config/qits/configuration.yml),
-as `serviceAddress` entries naming the `qits-artifacts` and `qits-observability` applications. The
-platform renders each per environment, so the defaults above are local-run values rather than facts
-a deployment has to be told. The file kind is specified in
-[`docs/guides/configuration-yml.md`](docs/guides/configuration-yml.md).
+Both addresses are **derived** from `QITS_ENVIRONMENT`, which the deployer injects into every
+container — `http://${QITS_ENVIRONMENT:dev}-qits-artifacts:8080` and the same shape for
+`qits.observability.url` — so no deployment has to hand them over (qits-1391). A per-installation
+override would be a deployer setting; see
+[`docs/guides/deployment-settings.md`](docs/guides/deployment-settings.md).
 
-*Transitional*: qits-bootstrap's `ComposeTemplate` EXTRAS block still supplies the old path-bearing
-`QITS_DOCS_ARTIFACTS_URL`, and must keep doing so for one release — the declaration has to be
-seeded by a tag that is already the newest before the template may stop. `DocsUpstream.storeRoot`
+*Transitional*: qits-bootstrap's `ComposeTemplate` EXTRAS block may still supply the old
+path-bearing `QITS_DOCS_ARTIFACTS_URL`. `DocsUpstream.storeRoot`
 therefore appends nothing when the configured URL already carries a path. That branch is deleted
 with the block.
 
@@ -224,8 +223,9 @@ Three things are worth knowing before adding one:
 `docs/guides/` holds the platform's **contract pages** — the ones that describe a file kind or a
 protocol every repository in the estate has to follow, and therefore belong to no single service.
 
-- `configuration-yml.md` — the authoritative account of `.config/qits/configuration.yml`, the file a
-  service repository uses to declare its own environment keys and their defaults.
+- `deployment-settings.md` — where a per-installation value lives now that
+  `.config/qits/configuration.yml` is gone: code defaults derived from `QITS_ENVIRONMENT`, deployer
+  settings (`qits deployments settings`), and the deployment shape in `.config/qits/deployments.yml`.
 - `agent-configuration.md` — what a coding-agent session runs as: the session surface, the stored
   per-surface configuration, the document a container is born with, and how harness capabilities are
   discovered. The contract shared by `qits-coding-agents`, both daemons, qits-projects and

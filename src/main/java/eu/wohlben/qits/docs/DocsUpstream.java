@@ -50,12 +50,11 @@ public class DocsUpstream {
    * <p><b>Why this is a constant and not configuration.</b> The two halves of the upstream URL are
    * owned by different people. The <em>address</em> — which host, which port — is estate topology:
    * it differs per environment, it moves when qits-artifacts moves, and only the platform knows it,
-   * which is why it arrives as {@code QITS_DOCS_ARTIFACTS_URL} and is declared as a {@code
-   * serviceAddress} in {@code .config/qits/configuration.yml}. The <em>path</em> is this service's
-   * own knowledge of its peer's API, no more configurable than the {@code /-/} separator or the
-   * {@code ?meta.git.branch.name=} filter a few lines down, and it belongs beside the code that
-   * dials it. A deployment that could set it could point this reader at a repository nothing
-   * publishes into.
+   * which is why it is derived from {@code QITS_ENVIRONMENT} as {@code <env>-qits-artifacts}
+   * (overridable as {@code QITS_DOCS_ARTIFACTS_URL}). The <em>path</em> is this service's own
+   * knowledge of its peer's API, no more configurable than the {@code /-/} separator or the {@code
+   * ?meta.git.branch.name=} filter a few lines down, and it belongs beside the code that dials it.
+   * A deployment that could set it could point this reader at a repository nothing publishes into.
    *
    * <p>{@code application.properties} already argues exactly this for the OTLP endpoint, which
    * composes {@code /observability/api/otel} onto a bare {@code qits.observability.url}. This is
@@ -104,11 +103,8 @@ public class DocsUpstream {
    * <p><b>The path is appended only when the configured URL has none, and that condition is
    * TRANSITIONAL.</b> Until qits-bootstrap's {@code ComposeTemplate} EXTRAS block for qits-docs is
    * deleted, a deployed container still receives the old path-bearing value ({@code
-   * http://<env>-qits-artifacts:8080/artifacts/docs/docs}) — and the two-step cold-boot rule in
-   * {@code docs/guides/configuration-yml.md} §7.5 says it must, for a whole release, because the
-   * declaration has to be seeded by a tag that is already the newest before the template may stop
-   * supplying the keys. Appending unconditionally in that window would dial {@code
-   * …/artifacts/docs/docs/artifacts/docs/docs} and 404 every read.
+   * http://<env>-qits-artifacts:8080/artifacts/docs/docs}). Appending unconditionally in that
+   * window would dial {@code …/artifacts/docs/docs/artifacts/docs/docs} and 404 every read.
    *
    * <p>So this is not tolerance of two spellings as a design. It is the one seam that lets the code
    * change and the declaration land in the same commit and survive a deployment that predates them
