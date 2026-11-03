@@ -57,10 +57,6 @@ public class DocsUpstream {
    * {@code /-/} separator or the {@code ?meta.git.branch.name=} filter a few lines down, and it
    * belongs beside the code that dials it. A deployment that could set it could point this reader
    * at a repository nothing publishes into.
-   *
-   * <p>{@code application.properties} already argues exactly this for the OTLP endpoint, which
-   * composes {@code /observability/api/otel} onto a bare {@code qits.observability.url}. This is
-   * the same shape, one commit later.
    */
   static final String REPOSITORY_PATH = "/artifacts/docs/docs";
 

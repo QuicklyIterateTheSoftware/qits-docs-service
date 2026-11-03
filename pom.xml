@@ -100,6 +100,11 @@
              way quarkus-opentelemetry already does for the REST client. Published by
              qits-integrations-quarkus, like qits-userflows above. -->
         <qits.http-core.version>2026.1103.132907</qits.http-core.version>
+        <!-- qits-telemetry-core (epic qits-428): the three OTLP/HTTP exporters as CDI beans whose
+             header supplier carries the `qits` oidc client's current bearer, so spans, logs and
+             metrics reach qits-observability at its edge host. Published by
+             qits-integrations-quarkus, like qits-http-core above. -->
+        <qits.telemetry-core.version>2026.1103.201640</qits.telemetry-core.version>
     </properties>
 
     <dependencyManagement>
@@ -140,11 +145,19 @@
             <artifactId>quarkus-smallrye-health</artifactId>
         </dependency>
         <dependency>
-            <!-- OTLP export to qits-observability. The extension instruments the process; the
-                 endpoint and protocol in application.properties are what make it arrive, since the
-                 defaults are gRPC to localhost:4317 and the receiver speaks HTTP/protobuf. -->
+            <!-- The instrumentation. The extension makes the spans, log records and metrics; the
+                 exporters that ship them are qits-telemetry-core's, below. -->
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-opentelemetry</artifactId>
+        </dependency>
+        <dependency>
+            <!-- OTLP export to qits-observability through the edge (epic qits-428): replaces all
+                 three of Quarkus' own OTLP exporters with CDI beans that attach the `qits` oidc
+                 client's bearer on every export. qits.telemetry.endpoint in application.properties;
+                 quarkus.otel.exporter.otlp.* no longer reaches anything. -->
+            <groupId>eu.wohlben.qits</groupId>
+            <artifactId>qits-telemetry-core</artifactId>
+            <version>${qits.telemetry-core.version}</version>
         </dependency>
         <dependency>
             <!-- QitsHttpClients wraps DocsUpstream's outbound HttpClient to qits-artifacts, and

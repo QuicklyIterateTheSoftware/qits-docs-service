@@ -45,15 +45,16 @@ import java.util.Map;
  *
  * <h2>One thing is OFF, and it is a stated coverage gap</h2>
  *
- * <p><b>The OTLP exporter.</b> qits-docs ships {@code quarkus-opentelemetry} pointed at
- * qits-observability, and it is the only dial-out this process has besides the store. It is
- * disabled here for the reason {@code %dev} and {@code %test} disable it — a suite must dial
- * nothing — and for a second reason that is about the diagrams: an exporter flushes on a schedule
- * of its own, on its own thread, so a span batch would draw an arrow into whichever story happened
- * to be open, which is a {@code networkHash} that never settles. <b>No story here covers the span
- * export</b>, and no story here claims the absence of one either: an {@code assertNoEdgesTo} over a
- * receiver that was never configured would be a claim about this profile rather than about the
- * service.
+ * <p><b>The OTLP exporter.</b> qits-docs ships {@code quarkus-opentelemetry} with
+ * qits-telemetry-core's exporters pointed at qits-observability, and it is the only dial-out this
+ * process has besides the store. It is disabled here for the reason {@code %dev} and {@code %test}
+ * disable it — a suite must dial nothing — and for a second reason that is about the diagrams: an
+ * exporter flushes on a schedule of its own, on its own thread, so a span batch would draw an arrow
+ * into whichever story happened to be open, which is a {@code networkHash} that never settles.
+ * <b>No story here covers the export</b> — {@code telemetry.TelemetryExportIT} does, in a profile
+ * and process of its own — and no story here claims the absence of one either: an {@code
+ * assertNoEdgesTo} over a receiver that was never configured would be a claim about this profile
+ * rather than about the service.
  */
 public class StoryProfile implements QuarkusTestProfile {
 

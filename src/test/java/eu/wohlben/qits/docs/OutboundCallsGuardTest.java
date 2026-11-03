@@ -44,9 +44,9 @@ import org.junit.jupiter.api.Test;
  * parameter or a changed path with no row fails here.
  *
  * <p><b>Excluded by name</b>, because neither is a qits REST contract: {@link #LIFECYCLE}, which
- * builds the client and sends nothing, and the OpenTelemetry exporter's OTLP posts to
- * qits-observability ({@code quarkus.otel.exporter.otlp.endpoint}), a telemetry stream every
- * service sends and no pact describes.
+ * builds the client and sends nothing, and the OTLP posts to qits-observability ({@code
+ * qits.telemetry.endpoint}, qits-telemetry-core's exporters, which live in that library rather than
+ * in this repository's main classes), a telemetry stream every service sends and no pact describes.
  */
 class OutboundCallsGuardTest {
 

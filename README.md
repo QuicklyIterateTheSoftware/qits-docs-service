@@ -110,14 +110,12 @@ most expensive wrong answer a component in the middle can give.
 who knows what: which host and port qits-artifacts answers on is estate topology, differs per
 environment and is the platform's to state, while the docs plane's route and its one repository are
 this service's knowledge of its peer's API — as configurable as the `/-/` version separator, which
-is to say not at all. `qits.observability.url` and its `/observability/api/otel` are the same split,
-and were before this one.
+is to say not at all.
 
 The store's address is **derived** from `QITS_DOMAIN`, which the deployer injects into every
 container: it is qits-artifacts' edge host, `https://registry.qits.${QITS_DOMAIN}` (qits-1419,
 feature qits-1406 — every service dials its peers at `<label>.qits.<domain>`, never a wire alias).
-`QITS_DOMAIN` has no default, so a process without it refuses to start. `qits.observability.url` is
-still derived from `QITS_ENVIRONMENT` until its own step of that feature. A per-installation
+`QITS_DOMAIN` has no default, so a process without it refuses to start. A per-installation
 override would be a deployer setting; see
 [`docs/guides/deployment-settings.md`](docs/guides/deployment-settings.md).
 
@@ -137,6 +135,35 @@ qits-ci injects the same store root into a publishing step as `$QITS_DOCS_URL`, 
 own. It stays path-bearing there — a step container is handed a URL to `curl`, not an address to
 compose against — so the two are no longer the same *value*, and they are still the same *root*:
 the publisher and the reader cannot disagree about where documentation lives.
+
+### Telemetry
+
+Spans, logs and metrics go to qits-observability **through the edge**, at
+`https://observability.qits.${QITS_DOMAIN}/observability/api/otel` (epic qits-428; this service was
+the first adopter). The exporters are
+[`qits-telemetry-core`](https://github.com/QuicklyIterateTheSoftware/qits-integrations-quarkus-javalib)'s
+CDI beans, not Quarkus' own: the edge refuses an anonymous POST to the receiver's vhost, and Quarkus'
+exporter takes only static headers, so each export instead carries the **`qits` oidc client's
+current bearer** — the same client, and the same token, as every read of the store.
+
+| Key | Default | What |
+| --- | --- | --- |
+| `qits.telemetry.endpoint` | `https://observability.qits.${QITS_DOMAIN}/observability/api/otel` | the OTLP/HTTP base; `/v1/{traces,logs,metrics}` is appended. The library's default, not set here |
+| `quarkus.otel.{traces,logs,metrics}.exporter` | `cdi` | spelled out; `cdi` is what makes the SDK take the library's beans |
+
+`qits.observability.url` and `quarkus.otel.exporter.otlp.endpoint`/`.protocol` are **gone**: with
+the library on the classpath none of Quarkus' OTLP exporters is built, so they reached nothing.
+(qits-bootstrap's compose template still injects `QITS_OBSERVABILITY_URL`; it now maps to no key.)
+The SDK is off under `%dev`, `%test` and the story profile, so none of them needs `QITS_DOMAIN` or
+the client for telemetry. `telemetry/OtelLogConfigTest` pins the keys; `telemetry/TelemetryExportIT`
+boots the packaged artifact (the binary under `-Dnative`) with the SDK on against a loopback idp and
+receiver (`telemetry/TelemetryStub`) and asserts a POST carrying `Authorization: Bearer …` to each
+of `/v1/traces`, `/v1/logs` and `/v1/metrics`.
+
+No `quarkus.ssl.native`: under Quarkus 3.40.1 that key only adds the `https` **URL** protocol
+handler (`--enable-url-protocols=https`), and the exporters' sender is `java.net.http`, which does
+not use one — the same client `DocsUpstream` already reads `https://registry.qits.<domain>` with in
+the deployed binary.
 
 ## Deployment
 
@@ -215,7 +242,8 @@ Three things are worth knowing before adding one:
 
 - **One `@TestProfile` for all of them** (`stories/support/StoryProfile`), because a profile is what
   failsafe launches a process for. Two profiles would be two qits-docs and a diagram whose traffic
-  landed in whichever one was running.
+  landed in whichever one was running. (`telemetry/TelemetryExportIT` is the one non-story IT, and
+  the one second process: it needs the SDK on, which the stories must not have.)
 - **The far side is `stories/support/StoryStore`**, a real listener speaking qits-artifacts' docs
   plane — the `/-/` grammar parsed, the `?meta.…` filter honoured, per-file content types and
   ETags, and a `PUT` that really publishes. It replaced a generic recording mock, because every
@@ -265,10 +293,11 @@ service's release schedule.
   own HTML 404 — the one body shape this service otherwise never produces. No browser or `curl`
   encodes `@` in a path, so nothing real hits it, and it was found only because RestAssured does.
   Worth a decision (decode before matching, or catch the fall-through) rather than a surprise.
-- **The span export.** `quarkus-opentelemetry` is the only dial-out besides the store and it is
-  disabled in the story profile, exactly as `%dev` and `%test` disable it. An exporter flushes on
-  its own schedule and would draw an arrow into whichever diagram happened to be open, so no story
-  covers it and no story claims its absence either.
+- **The telemetry export in a story.** It is the only dial-out besides the store and it is
+  disabled in the story profile, exactly as `%dev` and `%test` disable it: an exporter flushes on
+  its own schedule and would draw an arrow into whichever diagram happened to be open. It is
+  covered instead by `telemetry/TelemetryExportIT`, in a profile (and process) of its own that
+  draws no diagram.
 - **Anything but Storybook.** Every bundle so far is one, and the reader assumes only that a bundle
   has an `index.html` and refers to its assets relatively. A generator that does neither would need
   the reader to learn something.
