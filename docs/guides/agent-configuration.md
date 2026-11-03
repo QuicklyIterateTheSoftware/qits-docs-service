@@ -33,14 +33,17 @@ The vocabulary as it stands is eight keys:
 
 | Surface | Where it is | Host daemon |
 | --- | --- | --- |
-| `project.epics` | the refinement agent on a project's epics overview | projects |
-| `project.tickets` | the triage agent on a project's tickets overview | projects |
+| `project.work` | the one front desk at `:project/work` — the epics and tickets desks merged (qits-310) | projects |
+| `project.delivery` | the delivery desk, which runs the project's delivery loop | projects |
 | `epic.chat` | the refining route's chat tab | workspace |
 | `epic.agent` | the refining route's agent tab (interactive) | workspace |
 | `workspace.chat` | the workspace detail route's chat tab | workspace |
 | `workspace.agent` | the workspace detail route's agents tab (interactive) | workspace |
 | `epic.autonomous` | the composed task-prompt run nobody presses a button for | projects |
 | `ticket.dispatch` | the agent a ticket dispatch starts in a freshly cut workspace | workspace |
+
+`project.epics` and `project.tickets`, the two desks `project.work` replaced, are retired
+(qits-404): `AgentSurface.of` refuses them, and their stored rows are gone.
 
 `AgentSurface` is a **record over a string key, not an enum**, because the vocabulary stays open
 (§7). Open does not mean unchecked: `AgentSurface.of` refuses a key outside `AgentSurface.KNOWN`
@@ -60,7 +63,7 @@ other's job:
 - **`AgentSurface` is *what the session is for*.** Which prompt steers it, which model, which
   servers it attaches at all.
 
-A tickets desk can be narrowed to one repository; narrowing to a repository must not quietly change
+The front desk can be narrowed to one repository; narrowing to a repository must not quietly change
 what the agent is steered at. Both axes cross freely, and the code keeps them apart on purpose.
 
 ### Why the surface had to exist before anything could be configured
@@ -99,12 +102,12 @@ names are the wire contract.**
 
 ### Empty is a value, not an absence
 
-`model`, `effort`, `systemPrompt` and `initialPrompt` are never null. **`project.epics` steers with
-an empty system prompt on purpose** — the epics desk has always run with nothing appended, and that
-is a decision somebody made, not a row nobody filled in. The seed carries it as an empty string and
-the render must produce byte-for-byte what it produced when the prompt was a missing `switch` arm.
-An editor that treated empty as "unset" and substituted something would change six months of
-behaviour on the day the store shipped.
+`model`, `effort`, `systemPrompt` and `initialPrompt` are never null. **`project.work` steers with
+an empty system prompt on purpose** — it inherits the epics desk's, which always ran with nothing
+appended, and that is a decision somebody made, not a row nobody filled in. The seed carries it as
+an empty string and the render must produce byte-for-byte what it produced when the prompt was a
+missing `switch` arm. An editor that treated empty as "unset" and substituted something would
+change six months of behaviour on the day the store shipped.
 
 The same reading applies to `model`: empty is "let the harness choose", which is different from a
 model this platform picked and pinned.
@@ -526,7 +529,7 @@ Named plainly, because each of these looks like it might be in and is not:
 
 - A **surface** is where a session was started from; a **scope** is how narrow its MCP urls are. The
   two cross freely and neither is the other. (§1)
-- An **empty system prompt is a value.** `project.epics` steers with nothing, deliberately. (§2)
+- An **empty system prompt is a value.** `project.work` steers with nothing, deliberately. (§2)
 - The document is **not a mounted file** — the wire cannot express one. Two environment variables,
   the bytes and the path, and the **daemon** materializes the file at boot. **Both or neither.** (§3)
 - **Absent is quiet, malformed is loud.** No document means shipped constants; a bad one fails at
