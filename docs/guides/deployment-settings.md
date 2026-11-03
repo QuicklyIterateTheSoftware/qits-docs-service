@@ -6,10 +6,13 @@ application's environment from two places only.
 
 ## What the code can derive, it derives
 
-An address on qits-net is `<environment>-<application>`, and the deployer injects
-`QITS_ENVIRONMENT` into every container it starts. So a peer address is a code default —
-`http://${QITS_ENVIRONMENT:dev}-qits-artifacts:8080` — and not a value any deployment has to hand
-over. Prefer that to a setting whenever the value follows from facts the container already has.
+A peer's address is its edge host, `https://<label>.qits.<domain>` plus the peer's own path, where
+`<label>` is the peer's `host:` in its `.config/qits/deployments.yml`, else its application name
+without `qits-` (feature qits-1406). The deployer injects `QITS_DOMAIN` into every container it
+starts, so a peer address is a code default — `https://registry.qits.${QITS_DOMAIN}` for
+qits-artifacts — and not a value any deployment has to hand over. Write `${QITS_DOMAIN}` with no
+default, so a container without it refuses to start, and never put `QITS_ENVIRONMENT` in a peer
+address. Prefer that to a setting whenever the value follows from facts the container already has.
 
 ## Per-installation values are deployer settings
 

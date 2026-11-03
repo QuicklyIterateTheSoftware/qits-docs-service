@@ -21,7 +21,8 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
 /**
- * The one thing this service talks to: qits-artifacts' docs repository, over qits-net.
+ * The one thing this service talks to: qits-artifacts' docs repository, at the store's edge host
+ * {@code registry.qits.<domain>}, with this service's own bearer ({@link DocsBearer}).
  *
  * <p>Hand-rolled {@code java.net.http} rather than a REST client, the rule every outbound call on
  * this platform follows: a client library is a reflection surface to register and an image to
@@ -50,11 +51,12 @@ public class DocsUpstream {
    * <p><b>Why this is a constant and not configuration.</b> The two halves of the upstream URL are
    * owned by different people. The <em>address</em> — which host, which port — is estate topology:
    * it differs per environment, it moves when qits-artifacts moves, and only the platform knows it,
-   * which is why it is derived from {@code QITS_ENVIRONMENT} as {@code <env>-qits-artifacts}
-   * (overridable as {@code QITS_DOCS_ARTIFACTS_URL}). The <em>path</em> is this service's own
-   * knowledge of its peer's API, no more configurable than the {@code /-/} separator or the {@code
-   * ?meta.git.branch.name=} filter a few lines down, and it belongs beside the code that dials it.
-   * A deployment that could set it could point this reader at a repository nothing publishes into.
+   * which is why it is derived from {@code QITS_DOMAIN} as the store's edge host {@code
+   * https://registry.qits.<domain>} (overridable as {@code QITS_DOCS_ARTIFACTS_URL}). The
+   * <em>path</em> is this service's own knowledge of its peer's API, no more configurable than the
+   * {@code /-/} separator or the {@code ?meta.git.branch.name=} filter a few lines down, and it
+   * belongs beside the code that dials it. A deployment that could set it could point this reader
+   * at a repository nothing publishes into.
    *
    * <p>{@code application.properties} already argues exactly this for the OTLP endpoint, which
    * composes {@code /observability/api/otel} onto a bare {@code qits.observability.url}. This is
@@ -63,7 +65,7 @@ public class DocsUpstream {
   static final String REPOSITORY_PATH = "/artifacts/docs/docs";
 
   /**
-   * qits-artifacts' ADDRESS on qits-net — scheme, host, port, no path. The repository path is
+   * qits-artifacts' ADDRESS — its edge host, scheme and host, no path. The repository path is
    * {@link #REPOSITORY_PATH} and is composed onto it here; see that constant for which half belongs
    * to whom.
    */
@@ -82,6 +84,12 @@ public class DocsUpstream {
   Duration requestTimeout;
 
   @Inject QitsHttpClients clients;
+
+  /**
+   * The bearer every request carries — the edge refuses an anonymous one on the store's vhost. Null
+   * where the class is built by hand (the contract suite), and then nothing is sent.
+   */
+  @Inject DocsBearer bearer;
 
   private HttpClient http;
 
@@ -344,6 +352,9 @@ public class DocsUpstream {
   private <T> HttpResponse<T> send(
       HttpRequest.Builder builder, HttpResponse.BodyHandler<T> bodyHandler) {
     try {
+      if (bearer != null) {
+        bearer.token().ifPresent(token -> builder.header("Authorization", "Bearer " + token));
+      }
       return http.send(builder.timeout(requestTimeout).build(), bodyHandler);
     } catch (java.io.InterruptedIOException interrupted) {
       Thread.currentThread().interrupt();

@@ -15,16 +15,17 @@ import java.util.Map;
  * <h2>There is strikingly little here, and that is this service's shape</h2>
  *
  * <p>qits-docs holds no state: no datasource, no Flyway, no cache, no data directory to redirect
- * into {@code target/}. {@code .config/qits/deployments.yml} declares no {@code resources:} at all,
- * so there are no generic triples to supply, and the whole of a qits-docs deployment is <b>one
- * address</b>. That address is the one seam a story moves.
+ * into {@code target/}. {@code .config/qits/deployments.yml} declares no database, only its {@code
+ * idp:client}, whose triple the switched-off client below never reads, and the whole of a qits-docs
+ * deployment is <b>one address</b>. That address is the one seam a story moves.
  *
- * <p>It also has <b>no authentication</b> — no oidc tenant, no machine gate, no forward-auth
- * identity. The edge routes {@code /docs/**} here from every host and a documentation site is
- * readable by whoever can reach it. So there are no bearers in this catalogue, nothing to assert
- * unleaked, and every incoming edge is drawn from {@code "a reader"} because that is genuinely all
- * the wire says about who is asking. The refusal stories here are the store's refusals, not this
- * service's.
+ * <p>It also has <b>no inbound authentication</b> — no oidc tenant, no machine gate, no
+ * forward-auth identity. (Its OUTBOUND bearer to the store, the {@code qits} oidc client, is off in
+ * this profile; see {@link #getConfigOverrides}.) The edge routes {@code /docs/**} here from every
+ * host and a documentation site is readable by whoever can reach it. So there are no bearers in
+ * this catalogue, nothing to assert unleaked, and every incoming edge is drawn from {@code "a
+ * reader"} because that is genuinely all the wire says about who is asking. The refusal stories
+ * here are the store's refusals, not this service's.
  *
  * <h2>Both keys are RUNTIME keys</h2>
  *
@@ -66,6 +67,15 @@ public class StoryProfile implements QuarkusTestProfile {
     // a serviceAddress. DocsUpstream composes StoryStore.REPOSITORY_PATH onto it, so every path the
     // stories assert is still the one a deployment really builds, and the composition itself is now
     // under the stories rather than beside them.
-    return Map.of("qits.docs.artifacts-url", store, "quarkus.otel.sdk.disabled", "true");
+    // The qits oidc client OFF (qits-1419): the stand-in store checks no bearer, and a launched
+    // process with the client on would dial an idp that is not there before every read.
+    // IdpTokenMintPactTest proves the mint, DocsUpstreamBearerTest that the read carries it.
+    return Map.of(
+        "qits.docs.artifacts-url",
+        store,
+        "quarkus.otel.sdk.disabled",
+        "true",
+        "quarkus.oidc-client.qits.client-enabled",
+        "false");
   }
 }

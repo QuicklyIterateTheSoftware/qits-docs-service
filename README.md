@@ -101,7 +101,7 @@ most expensive wrong answer a component in the middle can give.
 
 | Key | Default | What |
 | --- | --- | --- |
-| `qits.docs.artifacts-url` | `http://dev-qits-artifacts:8080` | the store's **address** — scheme, host, port, no path |
+| `qits.docs.artifacts-url` | `https://registry.qits.${QITS_DOMAIN}` | the store's **address** — its edge host, no path |
 | `qits.docs.connect-timeout` | `PT2S` | |
 | `qits.docs.request-timeout` | `PT30S` | bounds the response *head*, not the transfer |
 
@@ -113,11 +113,20 @@ this service's knowledge of its peer's API — as configurable as the `/-/` vers
 is to say not at all. `qits.observability.url` and its `/observability/api/otel` are the same split,
 and were before this one.
 
-Both addresses are **derived** from `QITS_ENVIRONMENT`, which the deployer injects into every
-container — `http://${QITS_ENVIRONMENT:dev}-qits-artifacts:8080` and the same shape for
-`qits.observability.url` — so no deployment has to hand them over (qits-1391). A per-installation
+The store's address is **derived** from `QITS_DOMAIN`, which the deployer injects into every
+container: it is qits-artifacts' edge host, `https://registry.qits.${QITS_DOMAIN}` (qits-1419,
+feature qits-1406 — every service dials its peers at `<label>.qits.<domain>`, never a wire alias).
+`QITS_DOMAIN` has no default, so a process without it refuses to start. `qits.observability.url` is
+still derived from `QITS_ENVIRONMENT` until its own step of that feature. A per-installation
 override would be a deployer setting; see
 [`docs/guides/deployment-settings.md`](docs/guides/deployment-settings.md).
+
+**Every read carries this service's own bearer.** The edge refuses an anonymous request on the
+store's vhost (`qits.edge.auth.anonymous-read-apps` names no app), so `.config/qits/deployments.yml`
+declares `resources: idp:client` and the named oidc client `qits` mints a `qits:system` token from
+it (`DocsBearer`, the qits-githost pattern). The mint is pacted against qits-idp in
+`pacts/qits-docs-service_qits-idp-service.json` (`IdpConsumerPactTest`, run through the real client
+by `IdpTokenMintPactTest`); the client is off under `%dev`, `%test` and the story profile.
 
 *Transitional*: qits-bootstrap's `ComposeTemplate` EXTRAS block may still supply the old
 path-bearing `QITS_DOCS_ARTIFACTS_URL`. `DocsUpstream.storeRoot`
@@ -128,10 +137,6 @@ qits-ci injects the same store root into a publishing step as `$QITS_DOCS_URL`, 
 own. It stays path-bearing there — a step container is handed a URL to `curl`, not an address to
 compose against — so the two are no longer the same *value*, and they are still the same *root*:
 the publisher and the reader cannot disagree about where documentation lives.
-
-The in-network alias is the right default for the reason the npm and maven roots give — this process
-dials it from inside `qits-net`, so a host-published mapping (a local stack's `localhost:8081`) must
-**not** be substituted here.
 
 ## Deployment
 
