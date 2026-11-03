@@ -18,6 +18,16 @@ routes: /docs
 # (Api Docs 1, Docs 2, Code 3, CI 4, Artifacts 5, Configuration 6, Workspaces 7).
 navigation-entries: services.details.Docs:2, daemons.details.Docs:2, libs.details.Docs:2, apps.details.Docs:2, frontends.details.Docs:2, cli.details.Docs:2, images.details.Docs:2
 
+# idp:client ASKS QITS-DEPLOYMENTS TO PROVISION THIS APPLICATION'S OWN QITS-IDP SERVICE CLIENT — id
+# `<env>-qits-docs` (derived from env + application), roles fixed in qits-idp code. The deployer
+# stores the secret the way it stores a database password, and injects QITS_RESOURCE_IDP_URL,
+# QITS_RESOURCE_IDP_CLIENT_ID and QITS_RESOURCE_IDP_CLIENT_SECRET, which the `qits` oidc client in
+# application.properties reads. It is the bearer every read of qits-artifacts carries now that this
+# service dials the store at its edge host, registry.qits.<domain>, where the edge refuses an
+# anonymous request (qits-1419, feature qits-1406; the qits-githost pattern of qits-1330). No
+# database: this service still holds no state.
+resources: idp:client
+
 # The default would be /docs/q/health/ready, derived from the name with the qits-
 # prefix dropped — which is exactly right here. It is spelled anyway because the segment is
 # spelled in two other places (DocsPaths.BASE and quarkus.http.non-application-root-path), so a

@@ -92,6 +92,9 @@
              qits-artifacts-golden-masters is what qits-artifacts-service answers in each state. -->
         <qits.pact-consumer.version>2026.1019.82625</qits.pact-consumer.version>
         <qits.artifacts-golden-masters.version>2026.1029.125556</qits.artifacts-golden-masters.version>
+        <!-- qits-idp's recorded answers (test scope): IdpConsumerPactTest's token-mint row
+             (qits-1419), the same pin qits-githost-service reads its own mint row from. -->
+        <qits.idp-golden-masters.version>2026.1027.165632</qits.idp-golden-masters.version>
         <!-- qits-http-core: QitsHttpClients.wrap puts a CLIENT span and X-Qits-Caller on the one
              outbound java.net.http.HttpClient this service builds, to qits-artifacts — the same
              way quarkus-opentelemetry already does for the REST client. Published by
@@ -151,6 +154,15 @@
             <groupId>eu.wohlben.qits</groupId>
             <artifactId>qits-http-core</artifactId>
             <version>${qits.http-core.version}</version>
+        </dependency>
+
+        <dependency>
+            <!-- The named oidc client `qits` (qits-1419): this service's own qits:system bearer,
+                 minted by client credentials from the deployer's idp:client resource, which every
+                 read of qits-artifacts carries now that the store is dialled at its edge host. A
+                 client only — no tenant, no inbound check. -->
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-oidc-client</artifactId>
         </dependency>
 
         <dependency>
@@ -216,6 +228,13 @@
             <groupId>eu.wohlben.qits</groupId>
             <artifactId>qits-artifacts-golden-masters</artifactId>
             <version>${qits.artifacts-golden-masters.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <!-- IdpConsumerPactTest's mint row is built from qits-idp's recordings (qits-1419). -->
+            <groupId>eu.wohlben.qits</groupId>
+            <artifactId>qits-idp-golden-masters</artifactId>
+            <version>${qits.idp-golden-masters.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -301,6 +320,13 @@
                         <quarkus.http.test-port>0</quarkus.http.test-port>
                         <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
                     </systemPropertyVariables>
+                    <environmentVariables>
+                        <!-- QITS_DOMAIN carries no default (qits-1419): the store's address and the
+                             qits oidc client's idp fallback both expand it, so the LAUNCHED packaged
+                             artifact refuses to boot without one. Never dialled: StoryProfile points
+                             the store at its loopback stand-in and switches the client off. -->
+                        <QITS_DOMAIN>example.test</QITS_DOMAIN>
+                    </environmentVariables>
                 </configuration>
             </plugin>
             <plugin>

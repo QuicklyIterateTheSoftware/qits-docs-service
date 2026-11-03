@@ -6,12 +6,14 @@ userflows: qits-docs
 # THE CONTRACT (ticket qits-1149). Provider half: /docs/api/*'s recorded answers, for a consumer's
 # pact to take its responses from; npm too, because the expected consumer is the Angular client.
 # Consumer half: pacts/qits-docs-service_qits-artifacts-service.json, this service's calls to
-# qits-artifacts, built from its golden masters (ArtifactsContract).
+# qits-artifacts, built from its golden masters (ArtifactsContract); and
+# pacts/qits-docs-service_qits-idp-service.json, the `qits` client's token mint (qits-1419).
 contracts:
   application: qits-docs
   golden-masters: { from: golden-masters/, packages: [maven, npm] }
   pacts:
     qits-artifacts-service: { packages: [maven] }
+    qits-idp-service: { packages: [maven] }
 
 # A SECOND PUBLICATION BESIDE THE IMAGE: `docs/guides/` is the platform's contract pages, and this
 # is the one repository that may publish them. The site is the PLATFORM'S name, not this
