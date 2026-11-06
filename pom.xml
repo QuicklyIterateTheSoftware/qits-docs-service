@@ -50,12 +50,12 @@
              whole point is that it is forwarded rather than applied, per-file content types and
              ETags, and an upload route. stories/support/StoryStore is that API, standing in for it
              the way every sibling repository's peer stub stands in for its peers. -->
-        <qits.userflows.version>2026.1028.231715</qits.userflows.version>
+        <qits.userflows.version>2026.1106.205</qits.userflows.version>
         <!-- The platform's shared rules (test scope only), qits-1754: ProviderStateCoverageTest
              checks that every state golden-masters/index.json records has its @State callback on
              ConsumerPactVerificationTest. Published out of libs/qits-integrations-quarkus, like
              qits-userflows above. -->
-        <qits.arch-rules.version>2026.1030.30851</qits.arch-rules.version>
+        <qits.arch-rules.version>2026.1106.507</qits.arch-rules.version>
         <!-- Where it comes from. The default is the public host, https://registry.qits.wohlben.eu,
              which answers 401 without the commissioned client; docker/Dockerfile derives the same
              address from its QITS_DOMAIN build arg for every build that runs elsewhere. -->
@@ -90,7 +90,7 @@
              range: a newer recording is a pact change. qits-pact-consumer is the estate's shared
              golden-master reader (out of qits-integrations-quarkus-javalib);
              qits-artifacts-golden-masters is what qits-artifacts-service answers in each state. -->
-        <qits.pact-consumer.version>2026.1019.82625</qits.pact-consumer.version>
+        <qits.pact-consumer.version>2026.1106.507</qits.pact-consumer.version>
         <qits.artifacts-golden-masters.version>2026.1029.125556</qits.artifacts-golden-masters.version>
         <!-- qits-idp's recorded answers (test scope): IdpConsumerPactTest's token-mint row
              (qits-1419), the same pin qits-githost-service reads its own mint row from. -->
@@ -99,12 +99,12 @@
              outbound java.net.http.HttpClient this service builds, to qits-artifacts — the same
              way quarkus-opentelemetry already does for the REST client. Published by
              qits-integrations-quarkus, like qits-userflows above. -->
-        <qits.http-core.version>2026.1103.132907</qits.http-core.version>
+        <qits.http-core.version>2026.1106.507</qits.http-core.version>
         <!-- qits-telemetry-core (epic qits-428): the three OTLP/HTTP exporters as CDI beans whose
              header supplier carries the `qits` oidc client's current bearer, so spans, logs and
              metrics reach qits-observability at its edge host. Published by
              qits-integrations-quarkus, like qits-http-core above. -->
-        <qits.telemetry-core.version>2026.1103.201640</qits.telemetry-core.version>
+        <qits.telemetry-core.version>2026.1106.507</qits.telemetry-core.version>
     </properties>
 
     <dependencyManagement>
