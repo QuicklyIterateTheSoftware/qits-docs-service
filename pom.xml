@@ -55,7 +55,7 @@
              checks that every state golden-masters/index.json records has its @State callback on
              ConsumerPactVerificationTest. Published out of libs/qits-integrations-quarkus, like
              qits-userflows above. -->
-        <qits.arch-rules.version>2026.1106.507</qits.arch-rules.version>
+        <qits.arch-rules.version>2026.1108.20205</qits.arch-rules.version>
         <!-- Where it comes from. The default is the public host, https://registry.qits.wohlben.eu,
              which answers 401 without the commissioned client; docker/Dockerfile derives the same
              address from its QITS_DOMAIN build arg for every build that runs elsewhere. -->
@@ -94,7 +94,7 @@
         <qits.artifacts-golden-masters.version>2026.1107.150727</qits.artifacts-golden-masters.version>
         <!-- qits-idp's recorded answers (test scope): IdpConsumerPactTest's token-mint row
              (qits-1419), the same pin qits-githost-service reads its own mint row from. -->
-        <qits.idp-golden-masters.version>2026.1027.165632</qits.idp-golden-masters.version>
+        <qits.idp-golden-masters.version>2026.1108.62139</qits.idp-golden-masters.version>
         <!-- qits-http-core: QitsHttpClients.wrap puts a CLIENT span and X-Qits-Caller on the one
              outbound java.net.http.HttpClient this service builds, to qits-artifacts — the same
              way quarkus-opentelemetry already does for the REST client. Published by
