@@ -1,0 +1,162 @@
+# The doors of qits-docs that other qits repositories call (qits-1925).
+#
+# Every route here is a raw Vert.x route (DocsRoutes), not JAX-RS, so no annotation can describe
+# them. SmallRye serves this file as the document at /docs/q/openapi. It names each door a
+# consumer's pact cites, so the golden masters and the pacts share one operationId per door.
+#
+# Left out on purpose: the 302 redirects (/docs/{site}, /docs/{site}/ and
+# /docs/{site}/-/{version}), which a browser follows and no qits caller does; the client served at
+# the root of this service's host; and the framework's own surface under /docs/q.
+#
+# A {site} may span up to 4 slash-separated segments (@qits/ui-components, @userflows/qits-githost)
+# and a {path} may hold slashes (assets/main-a1b2c3d4.js), which an OpenAPI path parameter cannot
+# express; the routes accept them all the same (grammar: DocsPaths).
+#
+# Errors are a short text/plain body, never JSON and never HTML (DocsErrors).
+openapi: 3.1.0
+paths:
+  /docs/api/sites:
+    get:
+      operationId: listSites
+      summary: Every published docs site, grouped by scope in the store's name order.
+      responses:
+        "200":
+          description: The catalog. An unscoped site sits in the group whose scope is the empty string.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Catalog" }
+  /docs/api/versions:
+    get:
+      operationId: listVersions
+      summary: Every published version of one site, newest first; ?branch= filters by the git.branch.name metadata.
+      parameters:
+        - { name: site, in: query, required: true, schema: { type: string } }
+        - { name: branch, in: query, required: false, schema: { type: string } }
+      responses:
+        "200":
+          description: The versions; an empty list when a branch filter matches nothing.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/VersionList" }
+        "404":
+          description: Nothing is published under the site.
+          content:
+            text/plain: { schema: { type: string } }
+  /docs/api/version:
+    get:
+      operationId: getVersion
+      summary: One version's document, its file paths and metadata included, passed through from the store verbatim.
+      parameters:
+        - { name: site, in: query, required: true, schema: { type: string } }
+        - { name: version, in: query, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: The version document.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/VersionDocument" }
+        "404":
+          description: No such version.
+          content:
+            text/plain: { schema: { type: string } }
+  /docs/{site}/-/{version}/:
+    get:
+      operationId: getVersionIndex
+      summary: The bundle's entry point, index.html, streamed from the store with its content type and ETag.
+      parameters:
+        - { name: site, in: path, required: true, schema: { type: string } }
+        - { name: version, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: The file's bytes, with the store's content type passed through.
+          content:
+            "*/*": { schema: { type: string, format: binary } }
+        "404":
+          description: No such file in the version.
+          content:
+            text/plain: { schema: { type: string } }
+        "502":
+          description: The store is unreachable or answered something other than 200 or 404.
+          content:
+            text/plain: { schema: { type: string } }
+  /docs/{site}/-/{version}/{path}:
+    get:
+      operationId: getFile
+      summary: One file of a bundle, streamed from the store with its content type and ETag.
+      parameters:
+        - { name: site, in: path, required: true, schema: { type: string } }
+        - { name: version, in: path, required: true, schema: { type: string } }
+        - { name: path, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: The file's bytes, with the store's content type passed through.
+          content:
+            "*/*": { schema: { type: string, format: binary } }
+        "404":
+          description: No such file in the version.
+          content:
+            text/plain: { schema: { type: string } }
+        "502":
+          description: The store is unreachable or answered something other than 200 or 404.
+          content:
+            text/plain: { schema: { type: string } }
+components:
+  schemas:
+    Catalog:
+      type: object
+      required: [scopes]
+      properties:
+        scopes:
+          type: array
+          items: { $ref: "#/components/schemas/Scope" }
+    Scope:
+      type: object
+      required: [scope, docs]
+      properties:
+        scope: { type: string, description: "The @scope part of the names, or the empty string." }
+        docs:
+          type: array
+          items: { $ref: "#/components/schemas/Site" }
+    Site:
+      type: object
+      required: [name, shortName, versionCount, latestVersion]
+      properties:
+        name: { type: string }
+        shortName: { type: string, description: "The name after the scope; the whole name when unscoped." }
+        versionCount: { type: integer }
+        latestVersion: { type: string }
+    VersionList:
+      type: object
+      required: [name, versions]
+      properties:
+        name: { type: string }
+        versions:
+          type: array
+          items: { $ref: "#/components/schemas/VersionSummary" }
+    VersionSummary:
+      type: object
+      required: [version, fileCount, totalBytes, publishedAt]
+      properties:
+        version: { type: string }
+        fileCount: { type: integer }
+        totalBytes: { type: integer, format: int64 }
+        publishedAt: { type: string, format: date-time }
+        metadata: { $ref: "#/components/schemas/Metadata" }
+    VersionDocument:
+      type: object
+      description: The store's document, passed through verbatim; a member it adds later appears here unannounced.
+      required: [name, version, fileCount, totalBytes, publishedAt, files]
+      properties:
+        name: { type: string }
+        version: { type: string }
+        fileCount: { type: integer }
+        totalBytes: { type: integer, format: int64 }
+        publishedAt: { type: string, format: date-time }
+        files:
+          type: array
+          items: { type: string }
+        metadata: { $ref: "#/components/schemas/Metadata" }
+    Metadata:
+      type: object
+      description: The store's metadata keys (git.branch.name, git.commit.hash, git.repository.name), passed through verbatim.
+      additionalProperties: { type: string }

@@ -101,6 +101,11 @@ class ConsumerPactVerificationTest {
     return ProviderStates.params(ProviderStates.A_DOCS_SITE_PUBLISHED_FROM_TWO_BRANCHES);
   }
 
+  @State(ProviderStates.A_PUBLISHED_USERFLOWS_BUNDLE)
+  Map<String, String> aPublishedUserflowsBundle() {
+    return ProviderStates.params(ProviderStates.A_PUBLISHED_USERFLOWS_BUNDLE);
+  }
+
   @State(ProviderStates.NO_SUCH_DOCS_SITE)
   Map<String, String> noSuchDocsSite() {
     return ProviderStates.params(ProviderStates.NO_SUCH_DOCS_SITE);

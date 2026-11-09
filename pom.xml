@@ -170,6 +170,14 @@
         </dependency>
 
         <dependency>
+            <!-- The OpenAPI document at /docs/q/openapi (qits-1925). Every route here is a raw
+                 Vert.x route that no annotation describes, so the document is the static
+                 META-INF/openapi.yaml, which SmallRye serves as is. swagger-ui stays off. -->
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-smallrye-openapi</artifactId>
+        </dependency>
+
+        <dependency>
             <!-- The named oidc client `qits` (qits-1419): this service's own qits:system bearer,
                  minted by client credentials from the deployer's idp:client resource, which every
                  read of qits-artifacts carries now that the store is dialled at its edge host. A

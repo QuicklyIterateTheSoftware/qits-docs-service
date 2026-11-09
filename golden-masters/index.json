@@ -53,6 +53,19 @@
         "strings" : [ ],
         "listFilteredTo" : null
       }
+    }, {
+      "operationId" : "getVersionIndex",
+      "method" : "GET",
+      "path" : "/docs/{site}/-/{version}/",
+      "query" : { },
+      "status" : 200,
+      "file" : "a-published-docs-site/getVersionIndex.txt",
+      "frozen" : {
+        "ids" : [ ],
+        "instants" : [ ],
+        "strings" : [ ],
+        "listFilteredTo" : null
+      }
     } ]
   }, {
     "name" : "a docs site published from two branches",
@@ -112,6 +125,29 @@
       },
       "status" : 404,
       "file" : "no-such-docs-site/getVersion.txt",
+      "frozen" : {
+        "ids" : [ ],
+        "instants" : [ ],
+        "strings" : [ ],
+        "listFilteredTo" : null
+      }
+    } ]
+  }, {
+    "name" : "a published userflows bundle",
+    "slug" : "a-published-userflows-bundle",
+    "params" : {
+      "path" : "mirroring/a-push-reaches-the-mirror-and-nothing-else/userflow.json",
+      "site" : "@userflows/qits-githost",
+      "version" : "c4b3a29180f1e2d3c4b5a69786f1d0c9b8a7e6d5"
+    },
+    "dependsOn" : [ ],
+    "operations" : [ {
+      "operationId" : "getFile",
+      "method" : "GET",
+      "path" : "/docs/{site}/-/{version}/{path}",
+      "query" : { },
+      "status" : 200,
+      "file" : "a-published-userflows-bundle/getFile.json",
       "frozen" : {
         "ids" : [ ],
         "instants" : [ ],

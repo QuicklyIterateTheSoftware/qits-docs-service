@@ -19,17 +19,21 @@ import java.util.regex.Pattern;
 import org.junit.jupiter.api.Test;
 
 /**
- * <b>qits-docs' golden masters</b> (ticket qits-1149, epic qits-546): what {@code /docs/api/*}
- * answers in each {@link ProviderStates provider state}, recorded into {@code golden-masters/} —
- * {@code index.json} (format 1, the shape qits-projects writes) plus one file per (state,
- * operation). The release publishes the tree as {@code eu.wohlben.qits:qits-docs-golden-masters}
- * and {@code @qits/qits-docs-golden-masters}, for a consumer's pact to take its answers from.
+ * <b>qits-docs' golden masters</b> (ticket qits-1149, epic qits-546): what {@code /docs/api/*} and
+ * the bundle reads answer in each {@link ProviderStates provider state}, recorded into {@code
+ * golden-masters/} — {@code index.json} (format 1, the shape qits-projects writes) plus one file
+ * per (state, operation). The release publishes the tree as {@code
+ * eu.wohlben.qits:qits-docs-golden-masters} and {@code @qits/qits-docs-golden-masters}, for a
+ * consumer's pact to take its answers from.
  *
  * <p>Compare by default; {@code -Dgolden.update=true} rewrites the tree (see {@link GoldenFiles}).
  *
- * <p>The routes are raw Vert.x routes with no openapi document, so the operationIds below are this
- * provider's names for them. A request's query is recorded under {@code query}, with {@code
- * {param}} placeholders, since two of the three routes take their arguments there.
+ * <p>The routes are raw Vert.x routes, so the operationIds below are the ones the static {@code
+ * src/main/resources/META-INF/openapi.yaml} declares (qits-1925), and every operation there has at
+ * least one state here. A request's path and query are recorded as templates with {@code {param}}
+ * placeholders: the catalog routes take their arguments in the query, the bundle reads in the path.
+ * Both are substituted from the state's params before the request is made, and the index keeps the
+ * template.
  */
 @QuarkusTest
 @TestProfile(ContractProfile.class)
@@ -40,6 +44,8 @@ class GoldenMasterRecordingTest {
   static final String LIST_SITES = "listSites";
   static final String LIST_VERSIONS = "listVersions";
   static final String GET_VERSION = "getVersion";
+  static final String GET_VERSION_INDEX = "getVersionIndex";
+  static final String GET_FILE = "getFile";
 
   private static final Pattern PARAM = Pattern.compile("\\{([A-Za-z0-9_]+)}");
 
@@ -71,7 +77,10 @@ class GoldenMasterRecordingTest {
                 "/docs/api/version",
                 ordered("site", "{site}", "version", "{version}"),
                 200,
-                List.of("$.publishedAt"))));
+                List.of("$.publishedAt")),
+            // The entry point is HTML, so its file is .txt.
+            new Recorded(
+                GET_VERSION_INDEX, "/docs/{site}/-/{version}/", Map.of(), 200, List.of())));
     RECORDINGS.put(
         ProviderStates.A_DOCS_SITE_PUBLISHED_FROM_TWO_BRANCHES,
         List.of(
@@ -92,6 +101,10 @@ class GoldenMasterRecordingTest {
                 ordered("site", "{site}", "version", "{version}"),
                 404,
                 List.of())));
+    RECORDINGS.put(
+        ProviderStates.A_PUBLISHED_USERFLOWS_BUNDLE,
+        List.of(
+            new Recorded(GET_FILE, "/docs/{site}/-/{version}/{path}", Map.of(), 200, List.of())));
   }
 
   @Test
@@ -108,7 +121,14 @@ class GoldenMasterRecordingTest {
       for (Recorded recorded : entry.getValue()) {
         Map<String, String> query = new LinkedHashMap<>();
         recorded.query().forEach((name, value) -> query.put(name, substitute(value, params)));
-        Response response = given().queryParams(query).get(recorded.path());
+        String path = substitute(recorded.path(), params);
+        // A substituted path is already the URL a reader would send ({site} carries @ and /, and
+        // {path} carries /), so RestAssured must neither encode it nor read its braces as its own
+        // path-parameter template.
+        Response response =
+            path.equals(recorded.path())
+                ? given().queryParams(query).get(path)
+                : given().urlEncodingEnabled(false).queryParams(query).get(path);
         assertEquals(
             recorded.status(), response.statusCode(), state + "/" + recorded.operationId());
         boolean json = response.contentType().startsWith("application/json");

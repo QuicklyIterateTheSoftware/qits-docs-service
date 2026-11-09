@@ -22,6 +22,12 @@ public final class ProviderStates {
   public static final String A_DOCS_SITE_PUBLISHED_FROM_TWO_BRANCHES =
       "a docs site published from two branches";
 
+  /**
+   * {@code @userflows/qits-githost} at its {@code main} version, read for one story's {@code
+   * userflow.json}: a bundle file below the entry point, answered as {@code application/json}.
+   */
+  public static final String A_PUBLISHED_USERFLOWS_BUNDLE = "a published userflows bundle";
+
   /** A site name the store has never held. */
   public static final String NO_SUCH_DOCS_SITE = "no such docs site";
 
@@ -34,6 +40,15 @@ public final class ProviderStates {
     PARAMS.put(
         A_DOCS_SITE_PUBLISHED_FROM_TWO_BRANCHES,
         Map.of("site", StoryStore.GITHOST_USERFLOWS, "branch", StoryStore.MAIN_BRANCH));
+    PARAMS.put(
+        A_PUBLISHED_USERFLOWS_BUNDLE,
+        Map.of(
+            "site",
+            StoryStore.GITHOST_USERFLOWS,
+            "version",
+            StoryStore.GITHOST_MAIN_VERSION,
+            "path",
+            "mirroring/a-push-reaches-the-mirror-and-nothing-else/userflow.json"));
     PARAMS.put(NO_SUCH_DOCS_SITE, Map.of("site", StoryStore.UNKNOWN_SITE, "version", "2026.101.0"));
   }
 
