@@ -38,6 +38,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/VersionList"
+        "400":
+          description: ?site= is missing.
+          content:
+            text/plain:
+              schema:
+                type: string
         "404":
           description: Nothing is published under the site.
           content:
@@ -67,6 +73,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/VersionDocument"
+        "400":
+          description: ?site= or ?version= is missing.
+          content:
+            text/plain:
+              schema:
+                type: string
         "404":
           description: No such version.
           content:
