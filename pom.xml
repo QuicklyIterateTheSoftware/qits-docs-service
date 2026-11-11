@@ -91,7 +91,7 @@
              golden-master reader (out of qits-integrations-quarkus-javalib);
              qits-artifacts-golden-masters is what qits-artifacts-service answers in each state. -->
         <qits.pact-consumer.version>2026.1106.507</qits.pact-consumer.version>
-        <qits.artifacts-golden-masters.version>2026.1109.145731</qits.artifacts-golden-masters.version>
+        <qits.artifacts-golden-masters.version>2026.1111.53411</qits.artifacts-golden-masters.version>
         <!-- qits-idp's recorded answers (test scope): IdpConsumerPactTest's token-mint row
              (qits-1419), the same pin qits-githost-service reads its own mint row from. -->
         <qits.idp-golden-masters.version>2026.1109.13349</qits.idp-golden-masters.version>
