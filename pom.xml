@@ -55,7 +55,7 @@
              checks that every state golden-masters/index.json records has its @State callback on
              ConsumerPactVerificationTest. Published out of libs/qits-integrations-quarkus, like
              qits-userflows above. -->
-        <qits.arch-rules.version>2026.1108.20205</qits.arch-rules.version>
+        <qits.arch-rules.version>2026.1113.14706</qits.arch-rules.version>
         <!-- Where it comes from. The default is the public host, https://registry.qits.wohlben.eu,
              which answers 401 without the commissioned client; docker/Dockerfile derives the same
              address from its QITS_DOMAIN build arg for every build that runs elsewhere. -->
