@@ -172,6 +172,11 @@ One published port, and one host of its own: `docs.<env>.<domain>`. The edge ser
 there is no unprefixed spelling of the machine surface, on `qits-net` either. The segment is a
 literal in `DocsPaths` and no config key moves it.
 
+A release's deploy can be held for a person (`qits release-request hold-deploy`, qits-2268). The
+held deployment request is then approved (`qits deployments requests approve`) or declined (`qits
+deployments requests decline`, qits-2271). A decline ends the release request WITHDRAWN and keeps its
+commits off `main`; to ship them again, push a branch made from the release's tag.
+
 Readiness is the stock `/docs/q/health/ready`, and it is stock **deliberately**: this
 service has no state whose health could differ from "the process is up", and a check that dialled
 qits-artifacts would take this container down for an outage it is designed to survive by answering
