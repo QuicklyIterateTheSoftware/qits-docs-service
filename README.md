@@ -301,3 +301,5 @@ service's release schedule.
 - **Anything but Storybook.** Every bundle so far is one, and the reader assumes only that a bundle
   has an `index.html` and refers to its assets relatively. A generator that does neither would need
   the reader to learn something.
+
+<!-- qits-2271 live check: this line rides a release whose deploy is declined, and must never reach main. -->
