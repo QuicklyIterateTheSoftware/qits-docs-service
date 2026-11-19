@@ -6,7 +6,7 @@
 
     <groupId>eu.wohlben</groupId>
     <artifactId>qits-docs</artifactId>
-    <version>2026.1117.121936</version>
+    <version>2026.1119.21924</version>
     <packaging>quarkus</packaging>
 
     <name>qits-docs</name>
