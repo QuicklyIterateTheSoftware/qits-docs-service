@@ -87,4 +87,4 @@ release:
       qits artifacts publish docs submit \
         --site "@guides/qits-platform" --version "$QITS_VERSION" --archive /tmp/guides.tgz \
         --meta git.commit.hash="$QITS_CI_SHA" \
-        --meta git.repository.name=qits-docs
+        --meta git.repository.name="$QITS_CI_REPO_NAME"
