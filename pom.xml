@@ -94,7 +94,7 @@
         <qits.artifacts-golden-masters.version>2026.1120.165405</qits.artifacts-golden-masters.version>
         <!-- qits-idp's recorded answers (test scope): IdpConsumerPactTest's token-mint row
              (qits-1419), the same pin qits-githost-service reads its own mint row from. -->
-        <qits.idp-golden-masters.version>2026.1122.143700</qits.idp-golden-masters.version>
+        <qits.idp-golden-masters.version>2026.1123.194348</qits.idp-golden-masters.version>
         <!-- qits-http-core: QitsHttpClients.wrap puts a CLIENT span and X-Qits-Caller on the one
              outbound java.net.http.HttpClient this service builds, to qits-artifacts — the same
              way quarkus-opentelemetry already does for the REST client. Published by
