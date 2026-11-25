@@ -94,12 +94,12 @@
         <qits.artifacts-golden-masters.version>2026.1124.154841</qits.artifacts-golden-masters.version>
         <!-- qits-idp's recorded answers (test scope): IdpConsumerPactTest's token-mint row
              (qits-1419), the same pin qits-githost-service reads its own mint row from. -->
-        <qits.idp-golden-masters.version>2026.1123.194348</qits.idp-golden-masters.version>
+        <qits.idp-golden-masters.version>2026.1125.71255</qits.idp-golden-masters.version>
         <!-- qits-http-core: QitsHttpClients.wrap puts a CLIENT span and X-Qits-Caller on the one
              outbound java.net.http.HttpClient this service builds, to qits-artifacts — the same
              way quarkus-opentelemetry already does for the REST client. Published by
              qits-integrations-quarkus, like qits-userflows above. -->
-        <qits.http-core.version>2026.1106.507</qits.http-core.version>
+        <qits.http-core.version>2026.1125.110206</qits.http-core.version>
         <!-- qits-telemetry-core (epic qits-428): the three OTLP/HTTP exporters as CDI beans whose
              header supplier carries the `qits` oidc client's current bearer, so spans, logs and
              metrics reach qits-observability at its edge host. Published by
